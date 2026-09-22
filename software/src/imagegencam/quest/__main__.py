@@ -31,10 +31,16 @@ def parse_options(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--demo", action="store_true", help="Explicit sample-camera and local-effect mode"
     )
-    parser.add_argument(
+    setup = parser.add_mutually_exclusive_group()
+    setup.add_argument(
         "--setup-gemini",
         action="store_true",
         help="Enter the Gemini key privately in your terminal",
+    )
+    setup.add_argument(
+        "--setup-gemini-clipboard",
+        action="store_true",
+        help="Save the Gemini key from the Mac clipboard without a terminal paste prompt",
     )
     parser.add_argument("--model", help="Image model ID; fixed into each captured magic request")
     parser.add_argument(
@@ -58,7 +64,7 @@ def parse_options(argv: list[str] | None = None) -> argparse.Namespace:
     if args.screenshots and not args.demo:
         parser.error("Sample screenshots require --demo")
     args.camera = args.camera or ("fixture" if args.demo else "webcam")
-    if args.setup_gemini and args.provider != "gemini":
+    if (args.setup_gemini or args.setup_gemini_clipboard) and args.provider != "gemini":
         parser.error("--setup-gemini requires the Gemini provider")
     args.model = (
         args.model
@@ -78,13 +84,13 @@ def parse_options(argv: list[str] | None = None) -> argparse.Namespace:
 def main() -> None:
     args = parse_options()
     load_credentials()
-    if args.setup_gemini:
-        if not sys.stdin.isatty():
+    if args.setup_gemini or args.setup_gemini_clipboard:
+        if args.setup_gemini and not sys.stdin.isatty():
             raise SystemExit(
                 "Run --setup-gemini in your visible Terminal; never paste a key into chat."
             )
         try:
-            setup_gemini()
+            setup_gemini(clipboard=args.setup_gemini_clipboard)
         except ValueError as error:
             raise SystemExit(str(error)) from None
     key_name = {"openai": "OPENAI_API_KEY", "gemini": "GEMINI_API_KEY"}.get(args.provider)

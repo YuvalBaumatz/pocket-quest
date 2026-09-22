@@ -1,5 +1,6 @@
 import os
 import stat
+import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -80,6 +81,7 @@ def test_invalid_key_does_not_modify_file(tmp_path: Path) -> None:
         "'test-key'",
         'GEMINI_API_KEY="test-key"',
         "export GEMINI_API_KEY='test-key'",
+        "\x1b[200~test-key\x1b[201~",
     ],
 )
 def test_key_setup_accepts_common_paste_formats(
@@ -117,6 +119,57 @@ def test_key_setup_cancellation_preserves_settings(
             setup_gemini(path)
     assert path.read_text() == "GEMINI_API_KEY=previous-key\n"
     assert os.environ["GEMINI_API_KEY"] == "previous-key"
+
+
+def test_clipboard_setup_bypasses_prompt_and_keeps_key_private(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    path = tmp_path / ".env"
+    with (
+        patch("sys.platform", "darwin"),
+        patch("getpass.getpass") as prompt,
+        patch(
+            "subprocess.run",
+            return_value=subprocess.CompletedProcess(
+                ["/usr/bin/pbpaste"], 0, stdout="clipboard-test-key\n"
+            ),
+        ) as read_clipboard,
+    ):
+        setup_gemini(path, clipboard=True)
+    prompt.assert_not_called()
+    read_clipboard.assert_called_once_with(
+        ["/usr/bin/pbpaste"], capture_output=True, text=True, check=True, timeout=5
+    )
+    assert path.read_text() == "GEMINI_API_KEY=clipboard-test-key\n"
+    assert stat.S_IMODE(path.stat().st_mode) == 0o600
+    assert "clipboard-test-key" not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        subprocess.TimeoutExpired("pbpaste", 5, output="private-test-content"),
+        subprocess.CalledProcessError(1, "pbpaste", output="private-test-content"),
+    ],
+)
+def test_clipboard_read_failure_is_safe(tmp_path: Path, failure: Exception) -> None:
+    path = tmp_path / ".env"
+    path.write_text("OTHER=yes\n")
+    with patch("sys.platform", "darwin"), patch("subprocess.run", side_effect=failure):
+        with pytest.raises(ValueError, match="Could not read clipboard") as error:
+            setup_gemini(path, clipboard=True)
+    assert "private-test-content" not in str(error.value)
+    assert path.read_text() == "OTHER=yes\n"
+
+
+def test_clipboard_option_selects_gemini() -> None:
+    args = parse_options(["--setup-gemini-clipboard"])
+    assert args.setup_gemini_clipboard and args.provider == "gemini"
+    with pytest.raises(SystemExit):
+        parse_options(["--setup-gemini-clipboard", "--setup-gemini"])
+    with pytest.raises(SystemExit):
+        parse_options(["--setup-gemini-clipboard", "--provider", "none"])
 
 
 def webcam_backend(frame: np.ndarray) -> MagicMock:
