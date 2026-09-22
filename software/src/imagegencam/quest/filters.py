@@ -2,7 +2,7 @@
 
 from enum import StrEnum
 
-from PIL import Image, ImageOps
+from PIL import Image, ImageEnhance, ImageOps
 
 
 class Style(StrEnum):
@@ -37,6 +37,15 @@ def apply_style(source: Image.Image, style: Style) -> Image.Image:
     if style == Style.MONO:
         return ImageOps.grayscale(image).convert("RGB")
     if style == Style.PIXELS:
-        small = image.resize((24, 24), Image.Resampling.BOX)
-        return small.quantize(colors=8).convert("RGB").resize(image.size, Image.Resampling.NEAREST)
+        # Keep faces legible on the handheld and pixels square on wide photos.
+        scale = min(1.0, 64 / min(image.size))
+        size = (max(1, round(image.width * scale)), max(1, round(image.height * scale)))
+        small = image.resize(size, Image.Resampling.BOX)
+        small = ImageEnhance.Color(small).enhance(1.1)
+        small = ImageEnhance.Contrast(small).enhance(1.06)
+        return (
+            small.quantize(colors=32, dither=Image.Dither.NONE)
+            .convert("RGB")
+            .resize(image.size, Image.Resampling.NEAREST)
+        )
     return image.copy()

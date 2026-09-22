@@ -14,6 +14,8 @@ implemented subset and takes precedence for current status and actual file paths
 - Background capture using a real Mac/USB webcam, supplied photo, explicit fixtures, or optional lazy Picamera2 adapter.
 - Normal launch selects webcam + Gemini; private local key setup and no demo fallback.
 - Original/derivative album, local monochrome/pixel filters and three queued AI styles.
+- Pocket pixels preserves aspect ratio with a 64-pixel short edge and 32 colors;
+  visually compared at handheld size. Existing saved derivatives retain their original look.
 - OpenAI and Gemini adapters, parent approval/retry/cancel screens, and a free local demo.
 - Persistent queue, rolling dispatch cap, restart recovery and late-result cancellation.
 - Pi camera API is mock-tested; the actual Pi, LCD and physical controls are not tested.
