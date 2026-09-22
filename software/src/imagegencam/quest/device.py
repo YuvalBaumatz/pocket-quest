@@ -1,6 +1,7 @@
 """Small ports. Importing this module never initializes GPIO or a camera."""
 
-from typing import Protocol
+from pathlib import Path
+from typing import Any, Protocol
 
 from PIL import Image, ImageDraw
 
@@ -9,6 +10,8 @@ class Camera(Protocol):
     def preview(self) -> Image.Image: ...
 
     def capture(self) -> Image.Image: ...
+
+    def close(self) -> None: ...
 
 
 class Display(Protocol):
@@ -51,3 +54,63 @@ class FixtureCamera:
         image = self.preview()
         self.index += 1
         return image
+
+    def close(self) -> None:
+        pass
+
+
+class FileCamera:
+    """Use a supplied photo for the desktop workflow; never overwrite its source."""
+
+    def __init__(self, path: "Path") -> None:
+        with Image.open(path) as image:
+            self.image = image.convert("RGB")
+
+    def preview(self) -> Image.Image:
+        return self.image.copy()
+
+    def capture(self) -> Image.Image:
+        return self.image.copy()
+
+    def close(self) -> None:
+        pass
+
+
+class PiCamera:
+    """Lazy Picamera2 adapter; all methods are called on the capture worker thread."""
+
+    def __init__(self) -> None:
+        self.camera: Any = None
+        self.still_config: Any = None
+
+    def _start(self) -> None:
+        if self.camera is not None:
+            return
+        from picamera2 import Picamera2
+
+        camera = Picamera2()
+        try:
+            preview = camera.create_preview_configuration(main={"size": (320, 240)})
+            self.still_config = camera.create_still_configuration()
+            camera.configure(preview)
+            camera.start()
+        except Exception:
+            camera.close()
+            raise
+        self.camera = camera
+
+    def preview(self) -> Image.Image:
+        self._start()
+        return self.camera.capture_image("main").convert("RGB")
+
+    def capture(self) -> Image.Image:
+        self._start()
+        return self.camera.switch_mode_and_capture_image(self.still_config, "main").convert("RGB")
+
+    def close(self) -> None:
+        if self.camera is not None:
+            try:
+                self.camera.stop()
+            finally:
+                self.camera.close()
+                self.camera = None

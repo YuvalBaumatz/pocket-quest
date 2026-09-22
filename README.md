@@ -3,14 +3,17 @@
 A family adventure handheld for a 240×240 display: a playful camera, photo games,
 and little exploration missions. Personal fork of [OpenAI ImageGenCam](https://github.com/openai/imagegencam).
 
-**Working now:** an offline desktop simulator with a retro interface, fixture-photo
-capture, original/filtered album, pixel and monochrome filters, six-card memory,
-three photo missions, and saved progress. No API keys needed.
+**Working now:** a retro desktop interface, background photo capture, original/filtered
+album, local pixel and monochrome effects, three AI styles, a persistent approval queue,
+OpenAI/Gemini adapters, memory game, missions, and saved progress. The default provider
+is a free local demo; real AI runs only with an explicitly selected provider, a locally
+configured key and approved jobs.
 
-**Not yet connected:** your Pi/display, real camera, AI transformations in the new UI,
-Gemini, or the phone companion. The original ImageGenCam app remains available.
+**Hardware still to verify:** the Pi camera adapter, your LCD/buttons, and battery.
+The phone companion is not yet connected to Pocket Quest. The original ImageGenCam
+application remains available.
 
-![Pocket Quest working screens](docs/pocket-quest/foundation-preview.png)
+![Pocket Quest camera workflow](docs/pocket-quest/camera-workflow-preview.png)
 
 ## Try it on your computer
 
@@ -25,7 +28,9 @@ bash software/scripts/run_quest.sh
 Use arrow keys, **Enter = A**, **Escape = B**, and **H = Home**. Holding Escape
 also returns Home. In Camera, left/right changes the style and down opens the album.
 In Explore, take a mission photo, then hand the device to a grown-up for confirmation.
-The camera cycles through three original demo illustrations; it does not access your webcam.
+The default camera cycles through three original demo illustrations; it does not access your webcam.
+Use `--image /absolute/path/to/photo.jpg` to try your own photo. In Camera, Up opens
+Magic Queue for parent approval of starred styles. [Full camera workflow and provider setup](docs/pocket-quest/CAMERA-WORKFLOW.md).
 Photos and progress stay in `~/.pocket-quest-simulator` (override with `--data-dir`).
 
 For a headless preview:
@@ -39,6 +44,7 @@ See [validation commands and implementation status](docs/pocket-quest/BASELINE.m
 
 ## Design and agent handoff
 
+- [Camera workflow, providers and queue](docs/pocket-quest/CAMERA-WORKFLOW.md)
 - [Implemented structure and next steps](docs/pocket-quest/BASELINE.md)
 - [Experience and controls](docs/pocket-quest/EXPERIENCE.md)
 - [Target architecture](docs/pocket-quest/ARCHITECTURE.md)

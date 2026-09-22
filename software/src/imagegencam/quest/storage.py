@@ -54,14 +54,31 @@ class Store:
         photo = Photo(uuid4().hex, style, mission)
         directory = self.root / "photos" / photo.id
         atomic_write(directory / "original.png", encode(source))
-        if style != Style.ORIGINAL:
-            atomic_write(directory / "styled.png", encode(apply_style(source, style)))
         metadata = {"schema_version": 1, "style": style.value, "mission": mission}
         atomic_write(directory / "photo.json", json.dumps(metadata).encode())
+        if style != Style.ORIGINAL and not style.is_ai:
+            try:
+                atomic_write(directory / "styled.png", encode(apply_style(source, style)))
+            except (OSError, ValueError):
+                self.warnings.append(f"Original saved without local filter: {photo.id}")
         return photo
 
     def photos(self) -> list[Photo]:
         photos: list[Photo] = []
+        # A crash between saving an original and its metadata must not hide the photo.
+        # Recovered originals never create an AI job or an automatic upload.
+        for original in (self.root / "photos").glob("*/original.png"):
+            metadata = original.parent / "photo.json"
+            if not metadata.exists():
+                try:
+                    atomic_write(
+                        metadata,
+                        json.dumps(
+                            {"schema_version": 1, "style": Style.ORIGINAL.value, "mission": None}
+                        ).encode(),
+                    )
+                except OSError:
+                    self.warnings.append(f"Original recovery pending: {original.parent.name}")
         paths = (self.root / "photos").glob("*/photo.json")
         for path in sorted(paths, key=lambda path: path.stat().st_mtime_ns):
             try:
@@ -82,7 +99,9 @@ class Store:
         if len(photo_id) != 32 or any(c not in "0123456789abcdef" for c in photo_id):
             raise ValueError("Invalid photo ID")
         directory = self.root / "photos" / photo_id
-        path = directory / "styled.png"
+        path = directory / "magic.png"
+        if not path.exists():
+            path = directory / "styled.png"
         if original or not path.exists():
             path = directory / "original.png"
         with Image.open(path) as image:

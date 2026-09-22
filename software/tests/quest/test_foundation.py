@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 from random import Random
 from unittest.mock import patch
@@ -11,6 +12,14 @@ from imagegencam.quest.memory import MemoryGame
 from imagegencam.quest.render import render
 from imagegencam.quest.runtime import Quest, Screen
 from imagegencam.quest.storage import Store, atomic_write
+
+
+def wait_capture(app: Quest, now: float) -> None:
+    deadline = time.monotonic() + 3
+    while app.capturing and time.monotonic() < deadline:
+        app.tick(now)
+        time.sleep(0.005)
+    assert not app.capturing
 
 
 def test_input_hold_does_not_capture_twice_or_go_back_after_home() -> None:
@@ -122,6 +131,7 @@ def test_offline_capture_album_memory_and_mission_roundtrip(tmp_path: Path) -> N
     app.handle(Action.CONFIRM, 0)  # Home → camera
     app.handle(Action.RIGHT, 1)  # Pixels
     app.handle(Action.CONFIRM, 2)
+    wait_capture(app, 2.1)
     assert len(app.photos) == 1
     app.handle(Action.DOWN, 3)
     assert app.screen == Screen.ALBUM
@@ -144,9 +154,11 @@ def test_offline_capture_album_memory_and_mission_roundtrip(tmp_path: Path) -> N
     app.handle(Action.CONFIRM, 12)
     app.handle(Action.CONFIRM, 13)
     app.handle(Action.CONFIRM, 14)
+    wait_capture(app, 14.1)
     assert app.screen == Screen.REVIEW
     assert not app.stamps  # Photo alone never awards a stamp.
     app.handle(Action.CONFIRM, 15)
+    app.close()
     restored = Quest(FixtureCamera(), Store(tmp_path))
     assert restored.stamps == {0}
     assert restored.memory is not None and restored.memory.complete
@@ -158,6 +170,7 @@ def test_save_failure_shows_error_without_claiming_photo_saved(tmp_path: Path) -
     app.handle(Action.CONFIRM, 0)
     with patch.object(app.store, "capture", side_effect=OSError("disk full")):
         app.handle(Action.CONFIRM, 1)
+        wait_capture(app, 1.1)
     assert not app.photos
     assert "Could not" in app.notice
     assert app.screen == Screen.CAMERA

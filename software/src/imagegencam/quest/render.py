@@ -4,6 +4,7 @@ from functools import lru_cache
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
+from .jobs import JobState
 from .runtime import MISSIONS, Quest, Screen
 
 INK = "#182840"
@@ -72,7 +73,14 @@ def render(app: Quest) -> Image.Image:
     draw = ImageDraw.Draw(image)
     draw.rectangle((0, 0, 239, 23), fill=INK)
     label(draw, 10, 5, "POCKET QUEST", 12, CREAM)
-    label(draw, 186, 5, "LOCAL", 12, MINT)
+    label(
+        draw,
+        186,
+        5,
+        "DEMO" if app.provider == "demo" else "PAUSE" if app.generation.offline else "MAGIC",
+        12,
+        MINT,
+    )
     footer = "A OPEN"
     if app.screen == Screen.HOME:
         draw.rectangle((20, 36, 219, 188), fill=TEAL)
@@ -97,13 +105,31 @@ def render(app: Quest) -> Image.Image:
             image.paste(ImageOps.fit(app.image, (216, 168)), (12, 32))
             draw.rectangle((12, 32, 228, 56), fill=INK)
             title = (
-                app.style.value
+                ("* " if app.style.is_ai else "") + app.style.value
                 if app.screen == Screen.CAMERA
                 else "ORIGINAL"
                 if app.original
                 else "PHOTO"
             )
             if app.screen == Screen.ALBUM:
+                album_job = next(
+                    (job for job in app.job_items if job.id == app.photos[app.album_index].id), None
+                )
+                if album_job:
+                    if album_job.state != JobState.SUCCEEDED:
+                        title = "ORIGINAL"
+                    elif not app.original:
+                        title = "DEMO RESULT" if album_job.provider == "demo" else "MAGIC"
+                    draw.rectangle((12, 175, 228, 200), fill=INK)
+                    centered(
+                        draw,
+                        180,
+                        "Magic ready"
+                        if album_job.state == JobState.SUCCEEDED
+                        else "Magic: check queue",
+                        15,
+                        CREAM,
+                    )
                 title += f" {app.album_index + 1}/{len(app.photos)}"
             if app.screen == Screen.REVIEW:
                 title = "GROWN-UP CHECK"
@@ -114,11 +140,88 @@ def render(app: Quest) -> Image.Image:
         footer = "A SNAP" if app.screen == Screen.CAMERA else "A SWAP"
         if app.screen == Screen.CAMERA:
             draw.rectangle((12, 172, 228, 200), fill=INK)
-            label(draw, 20, 178, "< STYLE >   v ALBUM", 14, CREAM)
+            label(draw, 20, 174, "< STYLE >   v ALBUM", 12, CREAM)
+            label(draw, 20, 188, "^ MAGIC QUEUE", 12, MINT)
+            if app.camera_error:
+                centered(draw, 100, app.camera_error, 18)
+            footer = "SAVING" if app.capturing else "A SNAP"
         elif app.screen == Screen.REVIEW:
             draw.rectangle((12, 168, 228, 200), fill=INK)
             centered(draw, 175, "Mission complete?", 17, CREAM)
             footer = "A YES"
+    elif app.screen in (Screen.QUEUE, Screen.APPROVE, Screen.CANCEL):
+        job = app.current_job
+        if not job:
+            pip(draw, 85, 60, 7)
+            centered(draw, 146, "No magic waiting", 20)
+            centered(draw, 176, "Try a * camera style", 16)
+            footer = ""
+        elif app.screen == Screen.QUEUE:
+            centered(draw, 34, "MAGIC QUEUE", 22)
+            centered(draw, 64, job.style, 20)
+            centered(draw, 92, job.provider.upper(), 16)
+            labels = {
+                JobState.AWAITING: "Ask a grown-up",
+                JobState.READY: "Ready to make",
+                JobState.RUNNING: "Making magic...",
+                JobState.RETRY: "Waiting to retry",
+                JobState.UNKNOWN: "Needs review",
+                JobState.FAILED: "Could not make magic",
+                JobState.SUCCEEDED: "Ready in your album",
+                JobState.CANCELLED: "Cancelled",
+            }
+            centered(
+                draw,
+                118,
+                "Paused (offline)"
+                if app.generation.offline and job.state in (JobState.READY, JobState.RETRY)
+                else "Provider not enabled"
+                if job.provider not in app.generation.providers
+                and job.state in (JobState.READY, JobState.RETRY)
+                else "Daily limit reached"
+                if app.jobs.budget_blocked and job.state in (JobState.READY, JobState.RETRY)
+                else "Retry limit reached"
+                if job.attempts >= 3 and job.state in (JobState.FAILED, JobState.UNKNOWN)
+                else labels[job.state],
+                17,
+            )
+            if job.error:
+                errors = {
+                    "credentials": "Check API key",
+                    "rate_limit": "Provider is busy",
+                    "install_openai": "Install OpenAI package",
+                    "request_rejected": "Check model / request",
+                    "no_image": "No image returned",
+                }
+                centered(draw, 143, errors.get(job.error, "Original is still safe"), 15)
+            centered(draw, 169, f"< {app.queue_index + 1}/{len(app.job_items)} >", 16)
+            centered(draw, 189, "v Cancel request", 12)
+            footer = (
+                "A REVIEW"
+                if job.state in (JobState.AWAITING, JobState.FAILED, JobState.UNKNOWN)
+                and job.attempts < 3
+                else ""
+            )
+        elif app.screen == Screen.APPROVE:
+            centered(draw, 38, "GROWN-UP CHECK", 22)
+            centered(draw, 74, "Send photo to", 18)
+            centered(draw, 101, job.provider.upper(), 22)
+            centered(
+                draw,
+                135,
+                "Local demo, no charge" if job.provider == "demo" else "Uses API credits",
+                17,
+            )
+            centered(
+                draw, 165, "Retry may charge again" if job.attempts else "Original stays saved", 16
+            )
+            footer = "A SEND"
+        else:
+            centered(draw, 48, "CANCEL MAGIC?", 22)
+            centered(draw, 91, "Original stays saved", 18)
+            centered(draw, 127, "A running request", 17)
+            centered(draw, 151, "may still be charged", 17)
+            footer = "A CANCEL"
     elif app.screen == Screen.PLAY:
         centered(draw, 37, "PHOTO MEMORY", 22)
         pip(draw, 85, 79, 7)
