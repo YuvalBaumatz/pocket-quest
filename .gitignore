@@ -12,6 +12,10 @@ software/.venv/
 **/__pycache__/
 **/*.pyc
 software/.pytest_cache/
+software/.ruff_cache/
+software/.mypy_cache/
+software/data/quest/
+software/screenshots/
 software/data/captures/*
 !software/data/captures/.gitkeep
 software/data/generated/*

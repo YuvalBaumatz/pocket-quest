@@ -1,3 +1,16 @@
+# Pocket Quest development route
+
+For Pocket Quest coding tasks, start with README.md and docs/pocket-quest/BASELINE.md.
+This is a standalone personal fork, not a Makers package. Use Python conventions.
+Keep the upstream application functional; scope new code to software/src/imagegencam/quest.
+Run the checks listed in BASELINE.md after changes. Never require Pi libraries, API
+keys or live network calls in offline tests. The simulator is not evidence of hardware
+compatibility. Do not invent GPIO mappings or install services before hardware verification.
+Read the experience design before changing controls, visuals or game rules.
+The guide below applies to physical assembly/setup requests, not ordinary coding work.
+
+---
+
 # ImageGenCam Codex Guide
 
 This repo is designed to be opened directly in Codex Desktop. Do not ask users to install a separate Codex skill.

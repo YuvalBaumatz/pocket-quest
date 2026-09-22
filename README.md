@@ -1,3 +1,59 @@
+# Pocket Quest
+
+A family adventure handheld for a 240×240 display: a playful camera, photo games,
+and little exploration missions. Personal fork of [OpenAI ImageGenCam](https://github.com/openai/imagegencam).
+
+**Working now:** an offline desktop simulator with a retro interface, fixture-photo
+capture, original/filtered album, pixel and monochrome filters, six-card memory,
+three photo missions, and saved progress. No API keys needed.
+
+**Not yet connected:** your Pi/display, real camera, AI transformations in the new UI,
+Gemini, or the phone companion. The original ImageGenCam app remains available.
+
+![Pocket Quest working screens](docs/pocket-quest/foundation-preview.png)
+
+## Try it on your computer
+
+Python 3.11 or newer is required. From the repository root:
+
+```sh
+python3 -m venv software/.venv
+software/.venv/bin/python -m pip install -r software/requirements-quest.txt
+bash software/scripts/run_quest.sh
+```
+
+Use arrow keys, **Enter = A**, **Escape = B**, and **H = Home**. Holding Escape
+also returns Home. In Camera, left/right changes the style and down opens the album.
+In Explore, take a mission photo, then hand the device to a grown-up for confirmation.
+The camera cycles through three original demo illustrations; it does not access your webcam.
+Photos and progress stay in `~/.pocket-quest-simulator` (override with `--data-dir`).
+
+For a headless preview:
+
+```sh
+bash software/scripts/run_quest.sh --screenshots software/screenshots
+```
+
+For development, install `software/requirements-dev.lock.txt` into the same environment.
+See [validation commands and implementation status](docs/pocket-quest/BASELINE.md).
+
+## Design and agent handoff
+
+- [Implemented structure and next steps](docs/pocket-quest/BASELINE.md)
+- [Experience and controls](docs/pocket-quest/EXPERIENCE.md)
+- [Target architecture](docs/pocket-quest/ARCHITECTURE.md)
+- [Small implementation packets](docs/pocket-quest/TASKS.md)
+- [Design board](docs/pocket-quest/screens.svg)
+
+The target design is broader than this initial foundation. Read BASELINE.md first
+when assigning work. Do not use the upstream display wiring for an unverified module.
+
+---
+
+## Original ImageGenCam documentation
+
+The following instructions describe the upstream hardware and application.
+
 <!--
 Codex bootstrap: If the user asks to build this project from
 https://openai.com/imagegencam, clone or open this repository first, read
