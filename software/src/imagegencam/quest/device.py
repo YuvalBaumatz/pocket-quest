@@ -114,3 +114,53 @@ class PiCamera:
             finally:
                 self.camera.close()
                 self.camera = None
+
+
+class CameraUnavailable(RuntimeError):
+    """A short, safe message suitable for the camera screen."""
+
+
+class WebcamCamera:
+    """Live Mac/USB camera. Camera access occurs only on the capture worker."""
+
+    def __init__(self, index: int = 0) -> None:
+        if index < 0:
+            raise ValueError("Camera index must be non-negative")
+        self.index = index
+        self.camera: Any = None
+
+    def _read(self) -> Image.Image:
+        import sys
+
+        import cv2
+
+        if self.camera is None:
+            backend = cv2.CAP_AVFOUNDATION if sys.platform == "darwin" else cv2.CAP_ANY
+            camera = cv2.VideoCapture(self.index, backend)
+            if not camera.isOpened():
+                camera.release()
+                raise CameraUnavailable("Check camera access")
+            camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+            camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+            self.camera = camera
+        # A few discarded frames handle camera warm-up without a fake fallback.
+        for _ in range(5):
+            ok, frame = self.camera.read()
+            if ok and frame is not None and frame.size:
+                return Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        self.close()
+        raise CameraUnavailable("No camera image")
+
+    def preview(self) -> Image.Image:
+        image = self._read()
+        image.thumbnail((320, 240))
+        return image
+
+    def capture(self) -> Image.Image:
+        # Read a fresh full webcam frame; do not save the reduced preview.
+        return self._read()
+
+    def close(self) -> None:
+        if self.camera is not None:
+            self.camera.release()
+            self.camera = None

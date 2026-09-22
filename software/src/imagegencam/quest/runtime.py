@@ -7,7 +7,7 @@ from random import Random
 
 from PIL import Image
 
-from .device import Camera, fixture
+from .device import Camera, FixtureCamera, fixture
 from .filters import Style
 from .input import Action
 from .jobs import Job, JobQueue, JobState
@@ -58,7 +58,11 @@ class Quest:
         self.notice = ""
         self.notice_until = 0.0
         self.photos = store.photos()
-        self.image = fixture(0)
+        self.image = (
+            fixture(0)
+            if isinstance(camera, FixtureCamera)
+            else Image.new("RGB", (320, 240), "#182840")
+        )
         self.memory: MemoryGame | None = None
         self.cards: dict[str, Image.Image] = {}
         data = store.load_progress()
@@ -76,8 +80,13 @@ class Quest:
                 store.warnings.append(str(error))
 
         self.provider, self.model = provider, model
+        self.styles = [style for style in Style if provider != "none" or not style.is_ai]
         resolved_providers = (
-            providers if providers is not None else {provider: provider_for(provider)}
+            providers
+            if providers is not None
+            else {}
+            if provider == "none"
+            else {provider: provider_for(provider)}
         )
         self.jobs = JobQueue(store.root)
         self.job_items = self.jobs.all()
@@ -110,7 +119,7 @@ class Quest:
 
     @property
     def style(self) -> Style:
-        return list(Style)[self.style_index]
+        return self.styles[self.style_index]
 
     def persist(self) -> None:
         self.store.save_progress(self.memory.snapshot() if self.memory else None, self.stamps)
@@ -134,6 +143,8 @@ class Quest:
                 self.image, self.preview_version = frame, version
                 changed = True
             if error != self.camera_error:
+                if error:
+                    self.image = Image.new("RGB", (320, 240), "#182840")
                 self.camera_error = error
                 changed = True
         else:
@@ -209,7 +220,7 @@ class Quest:
                 if self.screen == Screen.CAMERA:
                     self.capture_worker.preview_enabled.set()
         elif self.screen == Screen.CAMERA:
-            self.style_index = (self.style_index + step) % len(Style)
+            self.style_index = (self.style_index + step) % len(self.styles)
             if action == Action.CONFIRM:
                 if not self.capturing:
                     self.capture_worker.requests.put_nowait((self.style, self.active_mission))

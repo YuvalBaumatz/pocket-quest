@@ -77,7 +77,13 @@ def render(app: Quest) -> Image.Image:
         draw,
         186,
         5,
-        "DEMO" if app.provider == "demo" else "PAUSE" if app.generation.offline else "MAGIC",
+        "DEMO"
+        if app.provider == "demo"
+        else "LOCAL"
+        if app.provider == "none"
+        else "PAUSE"
+        if app.generation.offline
+        else "MAGIC",
         12,
         MINT,
     )
@@ -143,7 +149,7 @@ def render(app: Quest) -> Image.Image:
             label(draw, 20, 174, "< STYLE >   v ALBUM", 12, CREAM)
             label(draw, 20, 188, "^ MAGIC QUEUE", 12, MINT)
             if app.camera_error:
-                centered(draw, 100, app.camera_error, 18)
+                centered(draw, 100, app.camera_error, 18, CREAM)
             footer = "SAVING" if app.capturing else "A SNAP"
         elif app.screen == Screen.REVIEW:
             draw.rectangle((12, 168, 228, 200), fill=INK)

@@ -5,9 +5,9 @@ and little exploration missions. Personal fork of [OpenAI ImageGenCam](https://g
 
 **Working now:** a retro desktop interface, background photo capture, original/filtered
 album, local pixel and monochrome effects, three AI styles, a persistent approval queue,
-OpenAI/Gemini adapters, memory game, missions, and saved progress. The default provider
-is a free local demo; real AI runs only with an explicitly selected provider, a locally
-configured key and approved jobs.
+OpenAI/Gemini adapters, memory game, missions, and saved progress. The default Mac workflow
+is a live webcam plus Gemini. Real AI requires a locally configured key and approved jobs;
+a missing key or camera produces an explicit error, never a demo fallback.
 
 **Hardware still to verify:** the Pi camera adapter, your LCD/buttons, and battery.
 The phone companion is not yet connected to Pocket Quest. The original ImageGenCam
@@ -21,22 +21,27 @@ Python 3.11 or newer is required. From the repository root:
 
 ```sh
 python3 -m venv software/.venv
-software/.venv/bin/python -m pip install -r software/requirements-quest.txt
-bash software/scripts/run_quest.sh
+software/.venv/bin/python -m pip install -r software/requirements-mac.txt
+bash software/scripts/run_quest.sh --setup-gemini
 ```
 
 Use arrow keys, **Enter = A**, **Escape = B**, and **H = Home**. Holding Escape
 also returns Home. In Camera, left/right changes the style and down opens the album.
 In Explore, take a mission photo, then hand the device to a grown-up for confirmation.
-The default camera cycles through three original demo illustrations; it does not access your webcam.
+The default camera is your Mac webcam. Allow camera access for Terminal when macOS asks.
+The key setup prompt is hidden and writes only to the Git-ignored `software/.env`.
+Later launches only need `bash software/scripts/run_quest.sh`.
+Use `--provider none` to test the real camera with local filters before configuring a key.
+Use `--demo` explicitly for sample images and a fake local transformation.
 Use `--image /absolute/path/to/photo.jpg` to try your own photo. In Camera, Up opens
 Magic Queue for parent approval of starred styles. [Full camera workflow and provider setup](docs/pocket-quest/CAMERA-WORKFLOW.md).
-Photos and progress stay in `~/.pocket-quest-simulator` (override with `--data-dir`).
+Real photos and progress stay in `~/.pocket-quest`; explicit demo mode uses
+`~/.pocket-quest-simulator` (override either with `--data-dir`).
 
 For a headless preview:
 
 ```sh
-bash software/scripts/run_quest.sh --screenshots software/screenshots
+bash software/scripts/run_quest.sh --demo --screenshots software/screenshots
 ```
 
 For development, install `software/requirements-dev.lock.txt` into the same environment.

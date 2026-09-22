@@ -11,7 +11,8 @@ implemented subset and takes precedence for current status and actual file paths
 - Separate `python -m imagegencam.quest` entry point, without API keys or Pi imports.
 - Native 240×240 Pillow renderer with the same frames shown in the desktop simulator.
 - Keyboard input with directional repeat, A repeat suppression and held-B Home.
-- Background capture using fixture images, a supplied photo, or an optional lazy Picamera2 adapter.
+- Background capture using a real Mac/USB webcam, supplied photo, explicit fixtures, or optional lazy Picamera2 adapter.
+- Normal launch selects webcam + Gemini; private local key setup and no demo fallback.
 - Original/derivative album, local monochrome/pixel filters and three queued AI styles.
 - OpenAI and Gemini adapters, parent approval/retry/cancel screens, and a free local demo.
 - Persistent queue, rolling dispatch cap, restart recovery and late-result cancellation.
@@ -29,7 +30,8 @@ implemented subset and takes precedence for current status and actual file paths
 | Module | Owns |
 | --- | --- |
 | input.py | Semantic actions, press/release/hold normalization |
-| device.py | Camera/Display protocols; fixture, file and Picamera2 adapters |
+| device.py | Camera/Display protocols; webcam, fixture, file and Picamera2 adapters |
+| configuration.py | Hidden Gemini key prompt and private Git-ignored .env storage |
 | filters.py | Pure local image effects |
 | storage.py | Original/derivative files, metadata, orphan-original recovery and progress |
 | jobs.py | SQLite journal, approval, dispatch reservation, budget and recovery |
@@ -41,8 +43,8 @@ implemented subset and takes precedence for current status and actual file paths
 | __main__.py | Desktop composition, Pygame events and screenshot CLI |
 
 Pygame is imported only when opening the desktop window. Tests and screenshot rendering
-need no SDL window. All new runtime data defaults to `~/.pocket-quest-simulator`, or
-an explicit `--data-dir`. It does not share an upstream queue or mutate existing
+need no SDL window. Real runtime data defaults to `~/.pocket-quest`; `--demo` uses
+`~/.pocket-quest-simulator`, or an explicit `--data-dir`. It does not share an upstream queue or mutate existing
 ImageGenCam photos/settings. Photo files are indexed by UUID; album order uses metadata
 file modification time in this simulator version.
 
@@ -78,8 +80,8 @@ Run from `software/`, after installing `requirements-dev.lock.txt`:
 .venv/bin/ruff check src/imagegencam/quest tests/quest
 .venv/bin/ruff format --check src/imagegencam/quest tests/quest
 .venv/bin/mypy
-PYTHONPATH=src .venv/bin/python -m imagegencam.quest --screenshots screenshots
-SDL_VIDEODRIVER=dummy PYTHONPATH=src .venv/bin/python -m imagegencam.quest --frames 3 --data-dir /tmp/pocket-quest-smoke
+PYTHONPATH=src .venv/bin/python -m imagegencam.quest --demo --screenshots screenshots
+SDL_VIDEODRIVER=dummy PYTHONPATH=src .venv/bin/python -m imagegencam.quest --demo --frames 3 --data-dir /tmp/pocket-quest-smoke
 ```
 
 The last command tests the desktop event/render loop without opening a GUI; it is not
@@ -95,12 +97,13 @@ runtime.py, storage.py and shared contracts. Update this baseline after each mil
 
 ## Recorded verification (2026-09-22)
 
-Python 3.11.15 on macOS: 94 tests passed (30 upstream, 64 Pocket Quest cases).
+Python 3.11.15 on macOS: 105 tests passed (30 upstream, 75 Pocket Quest cases).
 Scoped Ruff lint/format and mypy pass. Headless screenshots and the SDL dummy-driver
 loop pass. Reviewed the camera → queue → parent approval → demo result → original
 workflow at native resolution. Tested real provider request formats with mocked transport,
 background responsiveness, cancellation, crash recovery, queue/budget limits and source
-preservation. No live API spend, Pi hardware test or LCD/battery measurement was performed.
+preservation. A real Mac webcam read returned 1280×720 without saving/uploading. No live API spend,
+Pi hardware test or LCD/battery measurement was performed.
 
 [Camera workflow and setup](CAMERA-WORKFLOW.md) records exact controls, providers,
 persistence rules, known boundaries and source documentation. The concrete SQLite queue

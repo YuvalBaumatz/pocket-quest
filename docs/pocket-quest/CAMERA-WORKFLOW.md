@@ -1,9 +1,39 @@
 # Camera → saved original → magic → album
 
-## Try the complete flow without a key or a charge
+## Mac: real webcam and Gemini
+
+Install `software/requirements-mac.txt` into the project environment, then run:
 
 ```sh
-bash software/scripts/run_quest.sh
+bash software/scripts/run_quest.sh --setup-gemini
+```
+
+Enter the Gemini key only in that terminal prompt. Input is hidden. It is saved to
+Git-ignored `software/.env` with owner-only permissions. Subsequent launches use
+`bash software/scripts/run_quest.sh`; the normal defaults are webcam and Gemini.
+You can obtain a key from [Google AI Studio](https://aistudio.google.com/apikey).
+
+Enter Camera and allow macOS camera access for your terminal application. The preview
+is live. Captures use a fresh full webcam frame (1280×720 requested; actual hardware may
+negotiate a different size). The camera is released when you leave Camera mode.
+Pick a starred style, capture, press Up, and approve the request in Magic Queue. The
+returned Gemini image appears in Album; Enter switches between result and original.
+
+If access is denied, enable the terminal application under macOS Privacy & Security →
+Camera, then relaunch. Use `--camera-index 1` if your intended camera is a different
+available device. No camera is opened merely by starting at Home. If the API key is
+missing, startup gives setup instructions; it does not enable a demo transformation.
+For camera-only testing use `--provider none`; only real local filters are offered.
+For an existing photo use `--image /absolute/path/to/photo.jpg`.
+
+Real data lives in `~/.pocket-quest`; explicit demo data has a separate directory.
+An actual Mac webcam check received a 1280×720 frame during development without saving
+or uploading it. A real Gemini call still requires your locally entered key and approval.
+
+## Explicit demo without a key or a charge
+
+```sh
+bash software/scripts/run_quest.sh --demo
 ```
 
 1. Enter Camera. Press Right three times to choose `* Clay crew` (or select another starred style).
@@ -16,7 +46,7 @@ While a transformation runs, Home and games remain usable. Captures are single-f
 a repeated shutter press during saving is ignored. Closing the desktop window waits
 for the current capture to finish; generation requests are recovered on the next launch.
 
-To use your own picture rather than the procedural fixture camera:
+To use your own picture with real Gemini generation (after local key setup):
 
 ```sh
 bash software/scripts/run_quest.sh --image /absolute/path/to/photo.jpg
@@ -33,7 +63,7 @@ Install the optional SDK dependency into the existing environment:
 software/.venv/bin/python -m pip install -r software/requirements-ai.txt
 ```
 
-Set `OPENAI_API_KEY` or `GEMINI_API_KEY` in your local shell environment, then launch:
+Use `--setup-gemini` or set `OPENAI_API_KEY` / `GEMINI_API_KEY` in your local shell environment, then launch:
 
 ```sh
 bash software/scripts/run_quest.sh --provider openai --image /absolute/path/to/photo.jpg
@@ -41,11 +71,10 @@ bash software/scripts/run_quest.sh --provider openai --image /absolute/path/to/p
 bash software/scripts/run_quest.sh --provider gemini --image /absolute/path/to/photo.jpg
 ```
 
-Do not paste keys into chat or commit them. This entry point reads environment variables,
-not the upstream software/.env file. OpenAI defaults to `gpt-image-2`; Gemini defaults
+Do not paste keys into chat or commit them. This entry point reads `software/.env` and environment variables; explicit environment values take precedence. OpenAI defaults to `gpt-image-2`; Gemini defaults
 to `gemini-3.1-flash-image`. Override with `--model IMAGE_MODEL_ID` if your account
 requires a different image-editing model. Account access, output quality and live
-provider behavior require an actual account smoke test; none was performed in development.
+provider behavior require an actual account smoke test; a live camera check was performed, but no provider request was sent in development.
 
 Captures do not immediately upload. The parent review screen identifies the provider
 and asks before approving dispatch. An approved job can resume on later launches with

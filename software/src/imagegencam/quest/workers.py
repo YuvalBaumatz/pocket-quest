@@ -6,7 +6,7 @@ from queue import Empty, Queue
 
 from PIL import Image
 
-from .device import Camera
+from .device import Camera, CameraUnavailable
 from .filters import Style
 from .jobs import JobQueue
 from .providers import EditError, EditRequest, Provider, validated_png
@@ -44,15 +44,23 @@ class CaptureWorker:
                 try:
                     style, mission = self.requests.get(timeout=0.1)
                 except Empty:
+                    if not self.preview_enabled.is_set():
+                        self.camera.close()
                     if self.preview_enabled.is_set():
                         try:
                             frame = self.camera.preview()
                             with self.lock:
                                 self.latest, self.error = frame, ""
                                 self.version += 1
-                        except Exception:
+                        except Exception as error:
                             with self.lock:
-                                self.error = "Camera unavailable"
+                                self.latest = None
+                                self.version += 1
+                                self.error = (
+                                    str(error)
+                                    if isinstance(error, CameraUnavailable)
+                                    else "Camera unavailable"
+                                )
                             self.stop.wait(0.5)
                     continue
                 photo = None
