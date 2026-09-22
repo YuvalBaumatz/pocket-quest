@@ -49,12 +49,20 @@ def setup_gemini(path: Path | None = None, *, clipboard: bool = False) -> None:
         key = re.sub(r"^(?:export\s+)?GEMINI_API_KEY\s*=\s*", "", key)
         if len(key) >= 2 and key[0] == key[-1] and key[0] in "\"'":
             key = key[1:-1].strip()
-        if re.fullmatch(r"[A-Za-z0-9_-]+", key):
+        # Treat the credential as opaque. Gemini validates its format; locally
+        # require only a nonempty printable ASCII token safe for a header/.env.
+        if key and all(33 <= ord(character) <= 126 for character in key):
             break
         if not key:
             print("No key was received. Paste the key before pressing Enter.")
+        elif any(character in key for character in "…•●"):
+            print("The copied text appears masked or shortened. Copy the full secret key value.")
+        elif any(character.isspace() for character in key):
+            print("The input contains unsupported characters: embedded whitespace or line breaks.")
+        elif not key.isascii():
+            print("The input contains unsupported characters: non-ASCII text or invisible Unicode.")
         else:
-            print("The input contains unsupported characters. Copy the API key and try again.")
+            print("The input contains unsupported characters: terminal control characters.")
     else:
         raise ValueError(
             "Key setup stopped. Your saved settings were not changed."

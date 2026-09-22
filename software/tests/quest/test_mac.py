@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
+from imagegencam.config import load_env_file
 from imagegencam.quest.__main__ import parse_options
 from imagegencam.quest.configuration import setup_gemini
 from imagegencam.quest.device import CameraUnavailable, FixtureCamera, WebcamCamera
@@ -170,6 +171,48 @@ def test_clipboard_option_selects_gemini() -> None:
         parse_options(["--setup-gemini-clipboard", "--setup-gemini"])
     with pytest.raises(SystemExit):
         parse_options(["--setup-gemini-clipboard", "--provider", "none"])
+
+
+def test_key_punctuation_is_preserved_on_save_and_reload(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    key = "test.token+with/punctuation=:value"
+    path = tmp_path / ".env"
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    with patch("getpass.getpass", return_value=key):
+        setup_gemini(path)
+    monkeypatch.delenv("GEMINI_API_KEY")
+    load_env_file(path)
+    assert os.environ["GEMINI_API_KEY"] == key
+
+
+@pytest.mark.parametrize(
+    ("copied", "reason"),
+    [
+        ("private…value", "masked or shortened"),
+        ("private\u200bvalue", "invisible Unicode"),
+        ("private\nvalue", "line breaks"),
+        ("private\x00value", "control characters"),
+    ],
+)
+def test_clipboard_rejection_explains_category_without_exposing_content(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], copied: str, reason: str
+) -> None:
+    path = tmp_path / ".env"
+    path.write_text("OTHER=yes\n")
+    with (
+        patch("sys.platform", "darwin"),
+        patch(
+            "subprocess.run",
+            return_value=subprocess.CompletedProcess(["/usr/bin/pbpaste"], 0, stdout=copied),
+        ),
+    ):
+        with pytest.raises(ValueError):
+            setup_gemini(path, clipboard=True)
+    output = capsys.readouterr().out
+    assert reason in output
+    assert "private" not in output
+    assert path.read_text() == "OTHER=yes\n"
 
 
 def webcam_backend(frame: np.ndarray) -> MagicMock:
