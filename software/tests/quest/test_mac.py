@@ -1,6 +1,11 @@
 import os
+import pty
+import select
+import shlex
 import stat
 import subprocess
+import sys
+import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -173,6 +178,93 @@ def test_clipboard_option_selects_gemini() -> None:
         parse_options(["--setup-gemini-clipboard", "--provider", "none"])
 
 
+def test_launcher_waits_for_copy_then_saves_and_starts_app(tmp_path: Path) -> None:
+    """Run the real shell launcher/CLI through a terminal with a fake clipboard.
+
+    No real clipboard, key, webcam, or network request is needed.
+    """
+    bootstrap = tmp_path / "bootstrap.py"
+    bootstrap.write_text(
+        "import os, runpy, subprocess, sys\n"
+        "from pathlib import Path\n"
+        "from unittest.mock import patch\n"
+        "from imagegencam.quest import configuration\n"
+        "root = Path(os.environ['QUEST_TEST_ROOT'])\n"
+        "configuration.env_path = lambda: root / '.env'\n"
+        "original_run = subprocess.run\n"
+        "def clipboard(command, **kwargs):\n"
+        "    if command != ['/usr/bin/pbpaste']:\n"
+        "        return original_run(command, **kwargs)\n"
+        "    assert (root / 'copied').exists(), 'Clipboard read before confirmation'\n"
+        "    return subprocess.CompletedProcess(command, 0, stdout='test-clipboard-key')\n"
+        "sys.argv = [sys.argv[2], *sys.argv[3:]]\n"
+        "with patch('sys.platform', 'darwin'), patch('subprocess.run', side_effect=clipboard):\n"
+        "    runpy.run_module('imagegencam.quest', run_name='__main__')\n"
+    )
+    wrapper = tmp_path / "python"
+    wrapper.write_text(
+        f'#!/bin/sh\nexec {shlex.quote(sys.executable)} {shlex.quote(str(bootstrap))} "$@"\n'
+    )
+    wrapper.chmod(0o700)
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if key not in ("GEMINI_API_KEY", "OPENAI_API_KEY")
+    }
+    environment.update(
+        QUEST_PYTHON=str(wrapper),
+        QUEST_TEST_ROOT=str(tmp_path),
+        SDL_VIDEODRIVER="dummy",
+        PYTHONUNBUFFERED="1",
+    )
+    master, slave = pty.openpty()
+    launcher = Path(__file__).resolve().parents[2] / "scripts" / "run_quest.sh"
+    process = subprocess.Popen(
+        [
+            "bash",
+            str(launcher),
+            "--setup-gemini-clipboard",
+            "--camera",
+            "fixture",
+            "--frames",
+            "1",
+            "--data-dir",
+            str(tmp_path / "data"),
+        ],
+        stdin=slave,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        env=environment,
+    )
+    os.close(slave)
+    try:
+        assert process.stdout is not None
+        output = b""
+        deadline = time.monotonic() + 15
+        while b"Press Enter when the key is copied" not in output:
+            assert time.monotonic() < deadline, output.decode()
+            ready, _, _ = select.select([process.stdout], [], [], 0.2)
+            if ready:
+                chunk = os.read(process.stdout.fileno(), 4096)
+                assert chunk, output.decode()
+                output += chunk
+        assert not (tmp_path / ".env").exists()
+        (tmp_path / "copied").touch()
+        os.write(master, b"\n")
+        remainder, _ = process.communicate(timeout=15)
+        output += remainder
+        assert process.returncode == 0, output.decode()
+        assert b"Gemini key saved locally" in output
+        assert b"Provider: gemini" in output
+        assert b"test-clipboard-key" not in output
+        assert (tmp_path / ".env").read_text() == "GEMINI_API_KEY=test-clipboard-key\n"
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait()
+        os.close(master)
+
+
 def test_key_punctuation_is_preserved_on_save_and_reload(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -184,6 +276,14 @@ def test_key_punctuation_is_preserved_on_save_and_reload(
     monkeypatch.delenv("GEMINI_API_KEY")
     load_env_file(path)
     assert os.environ["GEMINI_API_KEY"] == key
+
+
+def test_copied_command_explains_copy_order_without_saving(tmp_path: Path) -> None:
+    path = tmp_path / ".env"
+    with patch("getpass.getpass", return_value="bash software/scripts/run_quest.sh"):
+        with pytest.raises(ValueError, match="clipboard contains a command"):
+            setup_gemini(path)
+    assert not path.exists()
 
 
 @pytest.mark.parametrize(

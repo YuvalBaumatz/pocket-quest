@@ -49,6 +49,11 @@ def setup_gemini(path: Path | None = None, *, clipboard: bool = False) -> None:
         key = re.sub(r"^(?:export\s+)?GEMINI_API_KEY\s*=\s*", "", key)
         if len(key) >= 2 and key[0] == key[-1] and key[0] in "\"'":
             key = key[1:-1].strip()
+        if key.startswith(("bash ", "curl ", "python ", "python3 ")):
+            raise ValueError(
+                "The clipboard contains a command, not a key. Nothing was saved. "
+                "Start setup first; copy the key when setup asks you to."
+            )
         # Treat the credential as opaque. Gemini validates its format; locally
         # require only a nonempty printable ASCII token safe for a header/.env.
         if key and all(33 <= ord(character) <= 126 for character in key):

@@ -85,11 +85,20 @@ def main() -> None:
     args = parse_options()
     load_credentials()
     if args.setup_gemini or args.setup_gemini_clipboard:
-        if args.setup_gemini and not sys.stdin.isatty():
+        if not sys.stdin.isatty():
             raise SystemExit(
                 "Run --setup-gemini in your visible Terminal; never paste a key into chat."
             )
         try:
+            if args.setup_gemini_clipboard:
+                print("Now copy your Gemini API key from AI Studio.")
+                print("Return here and press Enter. Do not paste the key or copy another command.")
+                try:
+                    input("Press Enter when the key is copied (Ctrl+C cancels): ")
+                except (EOFError, KeyboardInterrupt):
+                    raise ValueError(
+                        "Key setup cancelled. Your saved settings were not changed."
+                    ) from None
             setup_gemini(clipboard=args.setup_gemini_clipboard)
         except ValueError as error:
             raise SystemExit(str(error)) from None

@@ -97,9 +97,12 @@ runtime.py, storage.py and shared contracts. Update this baseline after each mil
 
 ## Recorded verification (2026-09-22)
 
-Python 3.11.15 on macOS: 123 tests passed (30 upstream, 93 Pocket Quest cases).
+Python 3.11.15 on macOS: 125 tests passed (30 upstream, 95 Pocket Quest cases).
 Key setup covers quoted/assignment pastes, terminal paste markers, retries, cancellation,
 private storage, and a Mac clipboard option tested with mocked clipboard reads.
+The clipboard setup waits for confirmation before reading. A terminal integration test
+runs the real shell launcher, confirms no early clipboard read/save, then saves a fake
+key and starts the app with a fixture camera and dummy display. No real key is used.
 Credentials accept printable ASCII punctuation; rejection reports character categories
 without exposing input. Format/authentication validity remains Gemini's responsibility.
 Scoped Ruff lint/format and mypy pass. Headless screenshots and the SDL dummy-driver

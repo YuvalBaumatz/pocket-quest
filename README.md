@@ -32,9 +32,9 @@ The default camera is your Mac webcam. Allow camera access for Terminal when mac
 The key setup prompt is hidden and writes only to the Git-ignored `software/.env`.
 Paste the key and press Enter; seeing no characters is normal. Empty or invalid input
 can be retried up to three times. Ctrl+C cancels without changing saved settings.
-If Terminal paste fails on Mac, type `bash software/scripts/run_quest.sh --setup-gemini-clipboard`
-without pressing Enter yet, copy the API key from AI Studio, then return to Terminal
-and press Enter. This reads the clipboard locally without displaying its contents.
+If Terminal paste fails on Mac, run `bash software/scripts/run_quest.sh --setup-gemini-clipboard`.
+The app pauses: copy the API key from AI Studio now, return to Terminal, and press Enter.
+This reads the clipboard locally without displaying its contents.
 Later launches only need `bash software/scripts/run_quest.sh`.
 Use `--provider none` to test the real camera with local filters before configuring a key.
 Use `--demo` explicitly for sample images and a fake local transformation.
