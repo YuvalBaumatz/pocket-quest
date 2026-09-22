@@ -16,8 +16,10 @@ You can obtain a key from [Google AI Studio](https://aistudio.google.com/apikey)
 Enter Camera and allow macOS camera access for your terminal application. The preview
 is live. Captures use a fresh full webcam frame (1280×720 requested; actual hardware may
 negotiate a different size). The camera is released when you leave Camera mode.
-Pick a starred style, capture, press Up, and approve the request in Magic Queue. The
-returned Gemini image appears in Album; Enter switches between result and original.
+Local pixel/mono styles appear in the preview and open their saved result after capture.
+Pick a starred style and capture to open its request in Magic Queue. Enter reviews it;
+Enter again authorizes sending. Once complete, Enter opens that result in Album;
+Enter switches between result and original. Up from Camera still opens the queue.
 
 If access is denied, enable the terminal application under macOS Privacy & Security →
 Camera, then relaunch. Use `--camera-index 1` if your intended camera is a different
@@ -38,9 +40,9 @@ bash software/scripts/run_quest.sh --demo
 
 1. Enter Camera. Press Right three times to choose `* Clay crew` (or select another starred style).
 2. Press Enter to capture. The original saves in the background. The screen says “Saved for magic”.
-3. Press Up for Magic Queue. Press Enter to review, then Enter to approve.
+3. Magic Queue opens automatically. Press Enter to review, then Enter to approve.
 4. The local **demo** provider creates a clearly labelled demo result. This is a color effect, not AI.
-5. Back returns to Camera; Down opens Album. Enter swaps the result and original.
+5. Press Enter on the completed request to view it. Enter swaps result and original.
 
 While a transformation runs, Home and games remain usable. Captures are single-flight:
 a repeated shutter press during saving is ignored. Closing the desktop window waits

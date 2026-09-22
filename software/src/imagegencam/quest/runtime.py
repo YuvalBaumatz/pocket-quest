@@ -8,7 +8,7 @@ from random import Random
 from PIL import Image
 
 from .device import Camera, FixtureCamera, fixture
-from .filters import Style
+from .filters import Style, apply_style
 from .input import Action
 from .jobs import Job, JobQueue, JobState
 from .memory import MemoryGame
@@ -140,7 +140,8 @@ class Quest:
             self.capture_worker.preview_enabled.set()
             frame, version, error = self.capture_worker.preview()
             if version != self.preview_version and frame is not None:
-                self.image, self.preview_version = frame, version
+                self.image = apply_style(frame, self.style)
+                self.preview_version = version
                 changed = True
             if error != self.camera_error:
                 if error:
@@ -155,6 +156,7 @@ class Quest:
             pass
         else:
             self.capturing = False
+            self.refresh_jobs()
             if result.photo:
                 self.photos.append(result.photo)
                 if (
@@ -164,7 +166,23 @@ class Quest:
                 ):
                     self.image = self.store.image(result.photo.id)
                     self.screen = Screen.REVIEW
-            self.refresh_jobs()
+                elif (
+                    self.screen == Screen.CAMERA
+                    and self.active_mission is None
+                    and result.photo.mission is None
+                ):
+                    job_index = next(
+                        (i for i, job in enumerate(self.job_items) if job.id == result.photo.id),
+                        None,
+                    )
+                    if job_index is not None:
+                        self.queue_index = job_index
+                        self.screen = Screen.QUEUE
+                    else:
+                        self.album_index = len(self.photos) - 1
+                        self.original = False
+                        self.load_album()
+                        self.screen = Screen.ALBUM
             self.message(result.message, now)
             changed = True
         if self.generation.changed.is_set():
@@ -221,6 +239,8 @@ class Quest:
                     self.capture_worker.preview_enabled.set()
         elif self.screen == Screen.CAMERA:
             self.style_index = (self.style_index + step) % len(self.styles)
+            if step:
+                self.preview_version = -1
             if action == Action.CONFIRM:
                 if not self.capturing:
                     self.capture_worker.requests.put_nowait((self.style, self.active_mission))
@@ -239,6 +259,23 @@ class Quest:
         elif self.screen == Screen.QUEUE:
             if self.job_items:
                 self.queue_index = (self.queue_index + step) % len(self.job_items)
+                if (
+                    action == Action.CONFIRM
+                    and self.current_job
+                    and self.current_job.state == JobState.SUCCEEDED
+                ):
+                    index = next(
+                        (
+                            i
+                            for i, photo in enumerate(self.photos)
+                            if photo.id == self.current_job.id
+                        ),
+                        None,
+                    )
+                    if index is not None:
+                        self.album_index, self.original = index, False
+                        self.load_album()
+                        self.screen = Screen.ALBUM
                 if (
                     action == Action.CONFIRM
                     and self.current_job

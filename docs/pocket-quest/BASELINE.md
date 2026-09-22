@@ -14,6 +14,8 @@ implemented subset and takes precedence for current status and actual file paths
 - Background capture using a real Mac/USB webcam, supplied photo, explicit fixtures, or optional lazy Picamera2 adapter.
 - Normal launch selects webcam + Gemini; private local key setup and no demo fallback.
 - Original/derivative album, local monochrome/pixel filters and three queued AI styles.
+- Local filter preview; capture opens its result or unapproved AI queue item;
+  completed jobs offer A VIEW to open the matching result.
 - Pocket pixels preserves aspect ratio with a 64-pixel short edge and 32 colors;
   visually compared at handheld size. Existing saved derivatives retain their original look.
 - OpenAI and Gemini adapters, parent approval/retry/cancel screens, and a free local demo.
@@ -66,8 +68,9 @@ Apache-2.0 LICENSE, NOTICE and third-party notices are retained.
 - Explore currently has 3 missions and a stamp count, not the planned 12-mission
   library/passport pages. Parent confirmation is a local usability screen, not a lock.
   An unconfirmed mission photo survives restart but the review screen does not resume.
-- Real API generation still needs an account-configured smoke test; all development
-  requests were mocked. Parent phone controls and authenticated companion are not wired in.
+- Two user-approved Gemini requests succeeded on the Mac, with original and result
+  images present and decodable. OpenAI live generation and the revised camera navigation
+  still need hands-on acceptance. Parent phone controls and authenticated companion are not wired in.
 - No export UI, low-space reserve or hardware radio-off controls yet. `--offline`
   blocks application job dispatch only. A crash between photo save and job enqueue can
   retain the original without a magic request; it never invents parent approval.
@@ -92,14 +95,19 @@ formatting changes. Use the full upstream+new pytest suite for regression covera
 
 ## Next agent task
 
-Start with the hardware fact sheet, then verify Picamera2 on-device and implement the
-LCD/input adapters. Background capture is already implemented. Pure game packets may use `Action`, `MemoryGame` as an example,
+Follow [TESTING.md](TESTING.md): finish hands-on camera acceptance, then implement
+archive export with original/derivative manifest and secret-exclusion tests.
+Hardware work needs the fact sheet before Picamera2/LCD/input verification.
+Pure game packets may use `Action`, `MemoryGame` as an example,
 `render.py` helpers and `Store` without hardware access. The lead owns changes to
 runtime.py, storage.py and shared contracts. Update this baseline after each milestone.
 
 ## Recorded verification (2026-09-22)
 
-Python 3.11.15 on macOS: 125 tests passed (30 upstream, 95 Pocket Quest cases).
+Python 3.11.15 on macOS: 136 tests passed (30 upstream, 106 Pocket Quest cases).
+`bash software/scripts/check_quest.sh` runs the complete offline validation and
+produces screenshots in an isolated temporary directory. Camera navigation, local
+preview, exact result selection, restart, and original preservation are covered.
 Key setup covers quoted/assignment pastes, terminal paste markers, retries, cancellation,
 private storage, and a Mac clipboard option tested with mocked clipboard reads.
 The clipboard setup waits for confirmation before reading. A terminal integration test
@@ -111,8 +119,10 @@ Scoped Ruff lint/format and mypy pass. Headless screenshots and the SDL dummy-dr
 loop pass. Reviewed the camera → queue → parent approval → demo result → original
 workflow at native resolution. Tested real provider request formats with mocked transport,
 background responsiveness, cancellation, crash recovery, queue/budget limits and source
-preservation. A real Mac webcam read returned 1280×720 without saving/uploading. No live API spend,
-Pi hardware test or LCD/battery measurement was performed.
+preservation. A real Mac webcam read returned 1280×720 without saving/uploading.
+Subsequent user-approved Gemini requests produced two succeeded jobs, each on its
+first attempt; both originals and outputs decode. The agent sent no additional live
+generation requests. No Pi hardware test or LCD/battery measurement was performed.
 
 [Camera workflow and setup](CAMERA-WORKFLOW.md) records exact controls, providers,
 persistence rules, known boundaries and source documentation. The concrete SQLite queue

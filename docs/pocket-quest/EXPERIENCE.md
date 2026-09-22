@@ -92,9 +92,14 @@ camera available to retry; never show false success. Camera failure does not blo
 
 Styles in v1: Original, Pocket Pixels (local), Mono (local), Clay Crew (AI), Ocean
 Explorers (AI), Friendly Robot (AI). Show a distinct wand badge on AI styles.
-Local effects run after capture, not on every preview frame. Each derivative links
+Local effects run on the low-resolution preview and on the saved derivative. AI styles
+show the original preview until an approved transformation completes. Each derivative links
 to its original. An AI capture saves locally and creates an unapproved queue item.
 Child copy is “Saved for magic”; it must not imply immediate processing.
+After an ordinary capture, show its local result in Album or its unapproved AI request
+in Magic Queue. Mission captures still go to the evidence confirmation screen. Do not
+interrupt another screen if the user navigated away while capture was saving.
+Completed Magic Queue items offer A VIEW to open that exact photo in Album.
 
 Album: left/right browses photos; A toggles original/selected derivative when present;
 down opens a large Original/Magic selector if multiple versions exist. B returns.

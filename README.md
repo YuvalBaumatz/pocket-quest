@@ -50,6 +50,8 @@ bash software/scripts/run_quest.sh --demo --screenshots software/screenshots
 ```
 
 For development, install `software/requirements-dev.lock.txt` into the same environment.
+Run `bash software/scripts/check_quest.sh` for the complete offline check suite.
+See the [hands-on acceptance checklist and next milestones](docs/pocket-quest/TESTING.md).
 See [validation commands and implementation status](docs/pocket-quest/BASELINE.md).
 
 ## Design and agent handoff

@@ -201,9 +201,12 @@ def render(app: Quest) -> Image.Image:
                 }
                 centered(draw, 143, errors.get(job.error, "Original is still safe"), 15)
             centered(draw, 169, f"< {app.queue_index + 1}/{len(app.job_items)} >", 16)
-            centered(draw, 189, "v Cancel request", 12)
+            if job.state not in (JobState.SUCCEEDED, JobState.CANCELLED):
+                centered(draw, 189, "v Cancel request", 12)
             footer = (
-                "A REVIEW"
+                "A VIEW"
+                if job.state == JobState.SUCCEEDED
+                else "A REVIEW"
                 if job.state in (JobState.AWAITING, JobState.FAILED, JobState.UNKNOWN)
                 and job.attempts < 3
                 else ""
