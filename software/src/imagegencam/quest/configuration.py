@@ -20,9 +20,26 @@ def load_credentials() -> None:
 
 def setup_gemini(path: Path | None = None) -> None:
     path = path or env_path()
-    key = getpass.getpass("Gemini API key (hidden; saved locally): ").strip()
-    if not re.fullmatch(r"[A-Za-z0-9_-]+", key):
-        raise ValueError("The key is empty or contains unsupported whitespace/characters")
+    print("Paste your Gemini API key, then press Enter. No characters will appear as you paste.")
+    print("Press Ctrl+C to cancel without changing your saved key.")
+    for _ in range(3):
+        try:
+            key = getpass.getpass("Gemini API key (hidden; saved locally): ").strip()
+        except (EOFError, KeyboardInterrupt):
+            raise ValueError("Key setup cancelled. Your saved settings were not changed.") from None
+        key = re.sub(r"^(?:export\s+)?GEMINI_API_KEY\s*=\s*", "", key)
+        if len(key) >= 2 and key[0] == key[-1] and key[0] in "\"'":
+            key = key[1:-1].strip()
+        if re.fullmatch(r"[A-Za-z0-9_-]+", key):
+            break
+        if not key:
+            print("No key was received. Paste the key before pressing Enter.")
+        else:
+            print("The input contains unsupported characters. Copy the API key and try again.")
+    else:
+        raise ValueError(
+            "Key setup stopped after 3 attempts. Your saved settings were not changed."
+        )
     lines = path.read_text().splitlines() if path.exists() else []
     lines = [line for line in lines if line.split("=", 1)[0].strip() != "GEMINI_API_KEY"]
     lines.append(f"GEMINI_API_KEY={key}")

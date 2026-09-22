@@ -72,6 +72,53 @@ def test_invalid_key_does_not_modify_file(tmp_path: Path) -> None:
     assert path.read_text() == "OTHER_SETTING=yes\n"
 
 
+@pytest.mark.parametrize(
+    "pasted",
+    [
+        "  test-key  ",
+        '"test-key"',
+        "'test-key'",
+        'GEMINI_API_KEY="test-key"',
+        "export GEMINI_API_KEY='test-key'",
+    ],
+)
+def test_key_setup_accepts_common_paste_formats(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, pasted: str
+) -> None:
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    path = tmp_path / ".env"
+    with patch("getpass.getpass", return_value=pasted):
+        setup_gemini(path)
+    assert path.read_text() == "GEMINI_API_KEY=test-key\n"
+
+
+def test_key_setup_retries_without_echoing_rejected_input(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    with patch("getpass.getpass", side_effect=["", "secret with spaces", "valid-key"]):
+        setup_gemini(tmp_path / ".env")
+    output = capsys.readouterr().out
+    assert "No key was received" in output
+    assert "unsupported characters" in output
+    assert "secret with spaces" not in output and "valid-key" not in output
+    assert os.environ["GEMINI_API_KEY"] == "valid-key"
+
+
+@pytest.mark.parametrize("interruption", [EOFError, KeyboardInterrupt])
+def test_key_setup_cancellation_preserves_settings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, interruption: type[BaseException]
+) -> None:
+    path = tmp_path / ".env"
+    path.write_text("GEMINI_API_KEY=previous-key\n")
+    monkeypatch.setenv("GEMINI_API_KEY", "previous-key")
+    with patch("getpass.getpass", side_effect=interruption):
+        with pytest.raises(ValueError, match="cancelled"):
+            setup_gemini(path)
+    assert path.read_text() == "GEMINI_API_KEY=previous-key\n"
+    assert os.environ["GEMINI_API_KEY"] == "previous-key"
+
+
 def webcam_backend(frame: np.ndarray) -> MagicMock:
     camera = MagicMock()
     camera.isOpened.return_value = True

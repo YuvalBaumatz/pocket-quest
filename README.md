@@ -30,6 +30,8 @@ also returns Home. In Camera, left/right changes the style and down opens the al
 In Explore, take a mission photo, then hand the device to a grown-up for confirmation.
 The default camera is your Mac webcam. Allow camera access for Terminal when macOS asks.
 The key setup prompt is hidden and writes only to the Git-ignored `software/.env`.
+Paste the key and press Enter; seeing no characters is normal. Empty or invalid input
+can be retried up to three times. Ctrl+C cancels without changing saved settings.
 Later launches only need `bash software/scripts/run_quest.sh`.
 Use `--provider none` to test the real camera with local filters before configuring a key.
 Use `--demo` explicitly for sample images and a fake local transformation.

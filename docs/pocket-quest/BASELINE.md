@@ -97,7 +97,8 @@ runtime.py, storage.py and shared contracts. Update this baseline after each mil
 
 ## Recorded verification (2026-09-22)
 
-Python 3.11.15 on macOS: 105 tests passed (30 upstream, 75 Pocket Quest cases).
+Python 3.11.15 on macOS: 113 tests passed (30 upstream, 83 Pocket Quest cases).
+Key setup covers quoted/assignment pastes, retries, cancellation, and private storage.
 Scoped Ruff lint/format and mypy pass. Headless screenshots and the SDL dummy-driver
 loop pass. Reviewed the camera → queue → parent approval → demo result → original
 workflow at native resolution. Tested real provider request formats with mocked transport,
