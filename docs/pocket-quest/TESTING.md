@@ -63,6 +63,12 @@ for ambiguous requests and charges. OpenAI requires its own configured live test
 
 ## Next milestones
 
+Milestone 2 photo export is implemented through `--export ZIP`; see [EXPORT.md](EXPORT.md).
+Its 17 automated cases cover archive integrity, image/source equality, secret exclusion,
+no overwrites, symlink rejection and failure cleanup. A real 7-photo / 12-image export
+also passed checksum and image-decoding checks. Finder/external-backup acceptance is
+deferred at the user's request, along with the revised camera hands-on check.
+
 | Order | Deliverable | Required evidence before calling it done |
 | --- | --- | --- |
 | 2 | Export/backup originals and derivatives with manifest | Reopen archive; every reference resolves; no keys/config included; interrupted export preserves library |
@@ -80,7 +86,7 @@ The automated suite uses real persistence and application logic with fake extern
 boundaries. Screenshots prove rendering, not usability. The Mac webcam has previously
 returned a real 1280×720 frame. The user has exercised camera/key setup and local
 filters, but this revised flow still needs a hands-on check. Pi/LCD/buttons/battery,
-OpenAI live generation, export, additional games and expanded missions are not yet
+OpenAI live generation, manual export acceptance, additional games and expanded missions are not yet
 accepted. Two user-approved Gemini requests succeeded on their first attempts and
 their originals/results decode successfully; the revised navigation still needs a
 hands-on pass. See BASELINE.md for the current implemented scope.

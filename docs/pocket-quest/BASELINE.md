@@ -25,6 +25,8 @@ implemented subset and takes precedence for current status and actual file paths
 - Three illustrated photo missions; captured evidence is tagged with its mission;
   local grown-up confirmation awards one persistent stamp per mission.
 - Atomic file replacement, validation and preserved unreadable progress files.
+- Photo ZIP export with originals/results, selected metadata and SHA-256 manifest;
+  no credentials, runtime state or overwrite of existing backups.
 - Headless screenshots, automated behavior tests and scoped lint/type/format checks.
 
 ## Current structure
@@ -36,6 +38,7 @@ implemented subset and takes precedence for current status and actual file paths
 | input.py | Semantic actions, press/release/hold normalization |
 | device.py | Camera/Display protocols; webcam, fixture, file and Picamera2 adapters |
 | configuration.py | Hidden Gemini key prompt and private Git-ignored .env storage |
+| export.py | Streamed photo ZIP and checksum manifest; read-only library access |
 | filters.py | Pure local image effects |
 | storage.py | Original/derivative files, metadata, orphan-original recovery and progress |
 | jobs.py | SQLite journal, approval, dispatch reservation, budget and recovery |
@@ -71,7 +74,8 @@ Apache-2.0 LICENSE, NOTICE and third-party notices are retained.
 - Two user-approved Gemini requests succeeded on the Mac, with original and result
   images present and decodable. OpenAI live generation and the revised camera navigation
   still need hands-on acceptance. Parent phone controls and authenticated companion are not wired in.
-- No export UI, low-space reserve or hardware radio-off controls yet. `--offline`
+- Export is available through `--export ZIP`; no on-device export UI or full app restore.
+  No low-space reserve or hardware radio-off controls yet. `--offline`
   blocks application job dispatch only. A crash between photo save and job enqueue can
   retain the original without a magic request; it never invents parent approval.
 - English only; no audio dependency. Do not claim Hebrew support or battery runtime.
@@ -95,8 +99,9 @@ formatting changes. Use the full upstream+new pytest suite for regression covera
 
 ## Next agent task
 
-Follow [TESTING.md](TESTING.md): finish hands-on camera acceptance, then implement
-archive export with original/derivative manifest and secret-exclusion tests.
+Follow [TESTING.md](TESTING.md): hands-on camera/export acceptance is deferred by the user.
+Photo export is implemented and automatically tested. Next software packet is Copy Pip,
+with fake-clock game rules, integration, persistence and visual review.
 Hardware work needs the fact sheet before Picamera2/LCD/input verification.
 Pure game packets may use `Action`, `MemoryGame` as an example,
 `render.py` helpers and `Store` without hardware access. The lead owns changes to
@@ -104,7 +109,12 @@ runtime.py, storage.py and shared contracts. Update this baseline after each mil
 
 ## Recorded verification (2026-09-22)
 
-Python 3.11.15 on macOS: 136 tests passed (30 upstream, 106 Pocket Quest cases).
+Python 3.11.15 on macOS: 153 tests passed (30 upstream, 123 Pocket Quest cases).
+Export has 17 tests covering roundtrip/checksums, selected metadata, secret exclusion,
+orphan originals, symlinks, failures, destination races, and the real shell launcher.
+A real library export contained 7 photos / 12 image files; archive integrity,
+source-byte equality, checksums and full image decoding were verified locally.
+The generated validation ZIP is temporary; no permanent external backup is claimed.
 `bash software/scripts/check_quest.sh` runs the complete offline validation and
 produces screenshots in an isolated temporary directory. Camera navigation, local
 preview, exact result selection, restart, and original preservation are covered.

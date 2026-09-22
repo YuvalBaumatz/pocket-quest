@@ -9,6 +9,7 @@ from pathlib import Path
 
 from .configuration import load_credentials, setup_gemini
 from .device import Camera, FileCamera, FixtureCamera, PiCamera, WebcamCamera
+from .export import export_photos
 from .input import Action, InputMapper
 from .render import render
 from .runtime import Quest, Screen
@@ -20,6 +21,9 @@ def parse_options(argv: list[str] | None = None) -> argparse.Namespace:
         description="Pocket Quest: real camera and image transformations"
     )
     parser.add_argument("--data-dir", type=Path, default=None)
+    parser.add_argument(
+        "--export", type=Path, metavar="ZIP", help="Export photos to a new ZIP and exit"
+    )
     parser.add_argument(
         "--screenshots",
         type=Path,
@@ -52,6 +56,8 @@ def parse_options(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--image", type=Path, help="Use your own image in the desktop camera")
     args = parser.parse_args(argv)
+    if args.export and (args.setup_gemini or args.setup_gemini_clipboard or args.screenshots):
+        parser.error("Use --export separately from key setup or screenshots")
     if args.frames is not None and args.frames < 1:
         parser.error("--frames must be positive")
     if args.camera_index < 0:
@@ -83,6 +89,13 @@ def parse_options(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main() -> None:
     args = parse_options()
+    if args.export:
+        try:
+            count = export_photos(args.data_dir, args.export)
+        except (OSError, ValueError) as error:
+            raise SystemExit(f"Export failed; photo library unchanged. {error}") from None
+        print(f"Exported {count} photos to {args.export.expanduser().absolute()}")
+        return
     load_credentials()
     if args.setup_gemini or args.setup_gemini_clipboard:
         if not sys.stdin.isatty():

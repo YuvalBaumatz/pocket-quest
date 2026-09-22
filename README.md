@@ -54,6 +54,16 @@ Run `bash software/scripts/check_quest.sh` for the complete offline check suite.
 See the [hands-on acceptance checklist and next milestones](docs/pocket-quest/TESTING.md).
 See [validation commands and implementation status](docs/pocket-quest/BASELINE.md).
 
+## Export your photos
+
+```sh
+bash software/scripts/run_quest.sh --export "$HOME/Downloads/pocket-quest-photos.zip"
+```
+
+Creates a new ZIP with originals, local/AI results, and a checksum manifest, then exits.
+No key or camera is needed. Existing backups are never overwritten; use a new filename
+for each export. [Export details and limitations](docs/pocket-quest/EXPORT.md).
+
 ## Design and agent handoff
 
 - [Camera workflow, providers and queue](docs/pocket-quest/CAMERA-WORKFLOW.md)
