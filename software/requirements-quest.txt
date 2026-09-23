@@ -1,0 +1,4 @@
+# Desktop foundation only: no Pi, network service or AI provider needed.
+Pillow>=10.1,<13
+pygame-ce>=2.5,<3
+qrcode>=8.2,<9

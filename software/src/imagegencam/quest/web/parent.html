@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Pocket Quest · Grown-ups</title>
+    <link rel="stylesheet" href="/parent.css" />
+    <script src="/parent.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <span class="badge">POCKET QUEST</span>
+      <h1>Adventure together.</h1>
+      <p>Photos, little discoveries, and a bit of magic.</p>
+    </header>
+    <main>
+      <p id="message" role="status" aria-live="polite"></p>
+      <section id="pair">
+        <h2>Pair with your handheld</h2>
+        <p>
+          On the device: Home → Up → Pair phone. Enter the six-digit code shown
+          there.
+        </p>
+        <form id="pair-form">
+          <label for="code">Pairing code</label
+          ><input
+            id="code"
+            name="code"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            pattern="[0-9]{6}"
+            maxlength="6"
+            required
+          /><button type="submit">Pair this browser</button>
+        </form>
+        <p class="small">
+          Codes expire after five minutes and work once. A new code disconnects
+          previously paired browsers.
+        </p>
+      </section>
+      <div id="controls" hidden>
+        <section>
+          <h2>Online magic</h2>
+          <p id="online-state"></p>
+          <button id="pause" type="button"></button>
+          <p class="small">
+            Pausing stops new API requests. A request already running may
+            finish. This does not turn off Wi-Fi.
+          </p>
+          <div id="jobs"></div>
+        </section>
+        <section>
+          <h2>Today's little adventures</h2>
+          <p>
+            Choose up to three missions. Clear all choices to browse all twelve.
+            Stay together and choose what fits your surroundings.
+          </p>
+          <div id="missions" class="grid"></div>
+        </section>
+        <section>
+          <h2>Keep your memories</h2>
+          <p>
+            Export originals and every saved local or AI result together. Keys
+            and app settings are excluded.
+          </p>
+          <button id="export" type="button">Prepare photo ZIP</button
+          ><a id="download" href="/api/export" hidden>Download photo ZIP</a>
+        </section>
+        <section>
+          <h2>Photos in games</h2>
+          <p>
+            Excluded photos stay in your album and backups. Changes also reset a
+            Memory board using an excluded photo.
+          </p>
+          <div id="photos" class="grid"></div>
+          <p class="small">
+            Showing the latest 100 photos. Export includes the full library.
+          </p>
+        </section>
+      </div>
+    </main>
+    <footer>
+      Made for family adventures. No photos leave the device until you approve
+      an online request or download them.
+    </footer>
+  </body>
+</html>

@@ -1,3 +1,103 @@
+# Pocket Quest
+
+A family adventure handheld for a 240×240 display: a playful camera, photo games,
+and little exploration missions. Personal fork of [OpenAI ImageGenCam](https://github.com/openai/imagegencam).
+
+**Working now:** a retro desktop interface, background photo capture, original/filtered
+album, local pixel and monochrome effects, three AI styles, a persistent approval queue,
+OpenAI/Gemini adapters, three offline games, twelve missions, a stamp passport, parent
+controls, ZIP export, and an optional paired phone companion. The default Mac workflow
+is a live webcam plus Gemini. Real AI requires a locally configured key and approved jobs;
+a missing key leaves local filters and offline games available. A missing camera is
+reported in Camera; games and Explore remain usable. Demo mode is always explicit.
+
+**Hardware still to verify:** the Pi camera adapter, your LCD/buttons, and battery.
+The exact Pi Zero variant, Pi camera model, display controller and pinout remain
+unverified. The original ImageGenCam application remains available.
+
+![Pocket Quest camera workflow](docs/pocket-quest/camera-workflow-preview.png)
+
+## Try it on your computer
+
+Python 3.11 or newer is required. From the repository root:
+
+```sh
+python3 -m venv software/.venv
+software/.venv/bin/python -m pip install -r software/requirements-mac.txt
+bash software/scripts/run_quest.sh --setup-gemini
+```
+
+Use arrow keys, **Enter = A**, **Escape = B**, and **H = Home**. Holding Escape
+also returns Home. In Camera, left/right changes the style and down opens the album.
+In Explore, take a mission photo, then hand the device to a grown-up for confirmation.
+In Play, left/right chooses Memory, Copy Pip or Photo Guess. In Explore, Down opens
+the passport and Up reviews previously saved evidence. From Home, Up opens grown-up
+controls for online magic, outing choices, photo permissions, export and phone pairing.
+The default camera is your Mac webcam. Allow camera access for Terminal when macOS asks.
+The key setup prompt is hidden and writes only to the Git-ignored `software/.env`.
+Paste the key and press Enter; seeing no characters is normal. Empty or invalid input
+can be retried up to three times. Ctrl+C cancels without changing saved settings.
+If Terminal paste fails on Mac, run `bash software/scripts/run_quest.sh --setup-gemini-clipboard`.
+The app pauses: copy the API key from AI Studio now, return to Terminal, and press Enter.
+This reads the clipboard locally without displaying its contents.
+Later launches only need `bash software/scripts/run_quest.sh`.
+Use `--provider none` to test the real camera with local filters before configuring a key.
+Use `--demo` explicitly for sample images and a fake local transformation.
+Use `--image /absolute/path/to/photo.jpg` to try your own photo. In Camera, Up opens
+Magic Queue for parent approval of starred styles. [Full camera workflow and provider setup](docs/pocket-quest/CAMERA-WORKFLOW.md).
+Real photos and progress stay in `~/.pocket-quest`; explicit demo mode uses
+`~/.pocket-quest-simulator` (override either with `--data-dir`).
+
+For a headless preview:
+
+```sh
+bash software/scripts/run_quest.sh --demo --screenshots software/screenshots
+```
+
+For development, install `software/requirements-dev.lock.txt` into the same environment.
+Run `bash software/scripts/check_quest.sh` for the complete offline check suite.
+See the [hands-on acceptance checklist and next milestones](docs/pocket-quest/TESTING.md).
+See [validation commands and implementation status](docs/pocket-quest/BASELINE.md).
+
+## Export your photos
+
+```sh
+bash software/scripts/run_quest.sh --export "$HOME/Downloads/pocket-quest-photos.zip"
+```
+
+Creates a new ZIP with originals, local/AI results, and a checksum manifest, then exits.
+No key or camera is needed. Existing backups are never overwritten; use a new filename
+for each export. [Export details and limitations](docs/pocket-quest/EXPORT.md).
+
+## Optional parent companion
+
+```sh
+bash software/scripts/run_quest.sh --companion
+```
+
+Open the printed address on this Mac, then use the device's Home → Up → Pair phone
+screen for the one-use code. For phone access, bind explicitly to the device's local
+IPv4 with `--companion-host`; see [companion setup and boundaries](docs/pocket-quest/COMPANION.md).
+The companion is off unless requested. [Software handoff and physical checks](docs/pocket-quest/HANDOFF.md).
+
+## Design and agent handoff
+
+- [Camera workflow, providers and queue](docs/pocket-quest/CAMERA-WORKFLOW.md)
+- [Implemented structure and next steps](docs/pocket-quest/BASELINE.md)
+- [Experience and controls](docs/pocket-quest/EXPERIENCE.md)
+- [Target architecture](docs/pocket-quest/ARCHITECTURE.md)
+- [Small implementation packets](docs/pocket-quest/TASKS.md)
+- [Design board](docs/pocket-quest/screens.svg)
+
+The target design is broader than this initial foundation. Read BASELINE.md first
+when assigning work. Do not use the upstream display wiring for an unverified module.
+
+---
+
+## Original ImageGenCam documentation
+
+The following instructions describe the upstream hardware and application.
+
 <!--
 Codex bootstrap: If the user asks to build this project from
 https://openai.com/imagegencam, clone or open this repository first, read

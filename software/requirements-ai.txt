@@ -1,0 +1,3 @@
+-r requirements-quest.txt
+# Gemini uses Python's built-in HTTP client. OpenAI uses the tested SDK.
+openai==3.17.0
