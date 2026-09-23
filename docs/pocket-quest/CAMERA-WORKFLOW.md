@@ -24,7 +24,8 @@ Enter switches between result and original. Up from Camera still opens the queue
 If access is denied, enable the terminal application under macOS Privacy & Security →
 Camera, then relaunch. Use `--camera-index 1` if your intended camera is a different
 available device. No camera is opened merely by starting at Home. If the API key is
-missing, startup gives setup instructions; it does not enable a demo transformation.
+missing, startup explains that only local filters and games are available; it does
+not enable a demo transformation. Configure a key and relaunch to enable AI styles.
 For camera-only testing use `--provider none`; only real local filters are offered.
 For an existing photo use `--image /absolute/path/to/photo.jpg`.
 

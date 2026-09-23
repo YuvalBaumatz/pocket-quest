@@ -2,6 +2,7 @@
 
 import json
 import os
+import shutil
 import tempfile
 from dataclasses import dataclass
 from io import BytesIO
@@ -11,6 +12,7 @@ from uuid import uuid4
 from PIL import Image
 
 from .filters import Style, apply_style
+from .missions import MISSIONS
 
 
 def atomic_write(path: Path, payload: bytes) -> None:
@@ -45,12 +47,24 @@ class Photo:
     mission: int | None = None
 
 
+class LowStorageError(OSError):
+    pass
+
+
 class Store:
-    def __init__(self, root: Path) -> None:
+    def __init__(self, root: Path, *, reserve_bytes: int = 200 * 1024 * 1024) -> None:
         self.root = root
+        self.reserve_bytes = reserve_bytes
         self.warnings: list[str] = []
 
     def capture(self, source: Image.Image, style: Style, mission: int | None) -> Photo:
+        existing = self.root
+        while not existing.exists():
+            existing = existing.parent
+        # Leave room for state/queue writes and the original plus a local derivative.
+        required = self.reserve_bytes + source.width * source.height * 12
+        if shutil.disk_usage(existing).free < required:
+            raise LowStorageError("Storage nearly full; export photos before taking more")
         photo = Photo(uuid4().hex, style, mission)
         directory = self.root / "photos" / photo.id
         atomic_write(directory / "original.png", encode(source))
@@ -86,7 +100,9 @@ class Store:
                 if not isinstance(data, dict) or data.get("schema_version") != 1:
                     raise ValueError("Unknown photo schema")
                 mission = data.get("mission")
-                if mission is not None and (type(mission) is not int or not 0 <= mission < 3):
+                if mission is not None and (
+                    type(mission) is not int or not 0 <= mission < len(MISSIONS)
+                ):
                     raise ValueError("Invalid mission")
                 if not (path.parent / "original.png").is_file():
                     raise ValueError("Original unavailable")
@@ -107,8 +123,20 @@ class Store:
         with Image.open(path) as image:
             return image.convert("RGB")
 
-    def save_progress(self, memory: dict[str, object] | None, stamps: set[int]) -> None:
-        value = {"schema_version": 1, "memory": memory, "stamps": sorted(stamps)}
+    def save_progress(
+        self,
+        memory: dict[str, object] | None,
+        stamps: set[int],
+        copy_pip: dict[str, object] | None = None,
+        guess: dict[str, object] | None = None,
+    ) -> None:
+        value = {
+            "schema_version": 1,
+            "memory": memory,
+            "stamps": sorted(stamps),
+            "copy_pip": copy_pip,
+            "guess": guess,
+        }
         atomic_write(self.root / "state.json", json.dumps(value).encode())
 
     def load_progress(self) -> dict[str, object]:
@@ -121,7 +149,7 @@ class Store:
                 raise ValueError("Unsupported save schema")
             stamps = value.get("stamps")
             if not isinstance(stamps, list) or any(
-                type(x) is not int or not 0 <= x < 3 for x in stamps
+                type(x) is not int or not 0 <= x < len(MISSIONS) for x in stamps
             ):
                 raise ValueError("Invalid stamps")
             return value

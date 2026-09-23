@@ -2,15 +2,47 @@
 
 import threading
 from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
 from queue import Empty, Queue
+from uuid import uuid4
 
 from PIL import Image
 
 from .device import Camera, CameraUnavailable
+from .export import export_photos
 from .filters import Style
 from .jobs import JobQueue
 from .providers import EditError, EditRequest, Provider, validated_png
-from .storage import Photo, Store, encode
+from .storage import LowStorageError, Photo, Store, encode
+
+
+class ExportWorker:
+    def __init__(self, root: Path):
+        self.root = root
+        self.thread: threading.Thread | None = None
+        self.results: Queue[tuple[Path | None, str]] = Queue()
+
+    def start(self) -> None:
+        if self.thread and self.thread.is_alive():
+            return
+        self.thread = threading.Thread(target=self._run, name="quest-export", daemon=True)
+        self.thread.start()
+
+    def _run(self) -> None:
+        stamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+        destination = (
+            self.root.parent / "Pocket Quest Exports" / f"photos-{stamp}-{uuid4().hex[:8]}.zip"
+        )
+        try:
+            count = export_photos(self.root, destination)
+            self.results.put((destination, f"Exported {count} photos"))
+        except (OSError, ValueError):
+            self.results.put((None, "Export failed; photos safe"))
+
+    def close(self) -> None:
+        if self.thread:
+            self.thread.join()
 
 
 @dataclass(frozen=True)
@@ -70,8 +102,14 @@ class CaptureWorker:
                     if style.is_ai:
                         self.jobs.enqueue(photo.id, style, self.provider, self.model)
                     message = "Saved for magic" if style.is_ai else "Photo saved!"
-                except Exception:
-                    message = "Saved; magic not queued" if photo else "Could not save photo"
+                except Exception as error:
+                    message = (
+                        "Storage low: export photos"
+                        if isinstance(error, LowStorageError)
+                        else "Saved; magic not queued"
+                        if photo
+                        else "Could not save photo"
+                    )
                 self.results.put(CaptureResult(photo, message))
                 self.requests.task_done()
         finally:

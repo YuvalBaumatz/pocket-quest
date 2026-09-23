@@ -1,5 +1,15 @@
 # Implementation packets
 
+## Current packet status (2026-09-23)
+
+F0–F2, G1–G3, E1, C1, Q1, P1–P2, W1 and X1 are implemented for the Mac software
+route. See BASELINE.md for exact scope and tests, COMPANION.md for local HTTP boundaries,
+and HANDOFF.md for hardware facts. L1 is conditional on a language choice; English
+is implemented and no other language has been requested. F3 and physical R1–R3
+acceptance require the actual device and verified wiring; they are not complete.
+Hands-on software acceptance is deferred at the user's request. Do not recreate
+already-implemented games or infer hardware readiness from passing Mac tests.
+
 ## Working agreement for all agents
 
 Read README, EXPERIENCE and ARCHITECTURE first. Work only in the standalone pinned

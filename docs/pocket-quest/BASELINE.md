@@ -1,4 +1,4 @@
-# Implemented foundation and camera workflow
+# Implemented Pocket Quest software
 
 Upstream: openai/imagegencam, commit `3475b97a2b631d7735d97f34d58dea47deb17942`.
 Personal fork: https://github.com/YuvalBaumatz/pocket-quest
@@ -13,6 +13,7 @@ implemented subset and takes precedence for current status and actual file paths
 - Keyboard input with directional repeat, A repeat suppression and held-B Home.
 - Background capture using a real Mac/USB webcam, supplied photo, explicit fixtures, or optional lazy Picamera2 adapter.
 - Normal launch selects webcam + Gemini; private local key setup and no demo fallback.
+  Without a configured provider key, local filters and games remain available.
 - Original/derivative album, local monochrome/pixel filters and three queued AI styles.
 - Local filter preview; capture opens its result or unapproved AI queue item;
   completed jobs offer A VIEW to open the matching result.
@@ -21,9 +22,15 @@ implemented subset and takes precedence for current status and actual file paths
 - OpenAI and Gemini adapters, parent approval/retry/cancel screens, and a free local demo.
 - Persistent queue, rolling dispatch cap, restart recovery and late-result cancellation.
 - Pi camera API is mock-tested; the actual Pi, LCD and physical controls are not tested.
-- Playable six-card photo memory, deterministic rules and saved matches.
-- Three illustrated photo missions; captured evidence is tagged with its mission;
-  local grown-up confirmation awards one persistent stamp per mission.
+- Three offline games: six-card Memory, Copy Pip sequences, and five-level Photo Guess.
+  Saved progress, fake-clock rules, missing-photo recovery and photo permissions.
+- Twelve illustrated missions, optional three-mission outings and a two-page passport.
+  Original three IDs preserved; saved evidence is reviewable after restart; stamps are idempotent.
+- Local grown-up controls: pause new API dispatches, outing selection, photo eligibility,
+  background photo export and phone pairing.
+- Opt-in authenticated companion: expiring one-use pairing, session cookies, exact
+  Origin/Host checks, UI-thread commands, photo review, approvals, stamps and ZIP download.
+- Configurable low-storage capture reserve (200 MiB default); no automatic deletion.
 - Atomic file replacement, validation and preserved unreadable progress files.
 - Photo ZIP export with originals/results, selected metadata and SHA-256 manifest;
   no credentials, runtime state or overwrite of existing backups.
@@ -45,6 +52,9 @@ implemented subset and takes precedence for current status and actual file paths
 | providers.py | Demo, OpenAI SDK and Gemini REST image-edit adapters |
 | workers.py | Background capture/preview and generation workers |
 | memory.py | Pure six-card game rules and validated save snapshots |
+| copy_pip.py / photo_guess.py | Offline game rules, timing, reveal levels and save validation |
+| missions.py / preferences.py | Stable mission content and persisted grown-up choices |
+| companion.py / web/ | Optional paired local HTTP interface and phone page |
 | runtime.py | Navigation, capture/album/mission use cases |
 | render.py | Palette, Pip, drawing primitives and screen rendering |
 | __main__.py | Desktop composition, Pygame events and screenshot CLI |
@@ -67,15 +77,14 @@ Apache-2.0 LICENSE, NOTICE and third-party notices are retained.
 
 - Actual board identification, verified display controller/pinout/buttons, Pi camera
   integration, power/battery and performance measurements. No hardware installer ran.
-- Memory is the only game. Copy Pip and Photo Guess remain future packets.
-- Explore currently has 3 missions and a stamp count, not the planned 12-mission
-  library/passport pages. Parent confirmation is a local usability screen, not a lock.
-  An unconfirmed mission photo survives restart but the review screen does not resume.
+- Child usability, actual phone/hotspot reachability, physical QR readability and
+  a 60-minute real-device soak remain acceptance work. Local parent controls are a
+  usability screen; the optional phone companion separately requires pairing.
 - Two user-approved Gemini requests succeeded on the Mac, with original and result
   images present and decodable. OpenAI live generation and the revised camera navigation
-  still need hands-on acceptance. Parent phone controls and authenticated companion are not wired in.
-- Export is available through `--export ZIP`; no on-device export UI or full app restore.
-  No low-space reserve or hardware radio-off controls yet. `--offline`
+  still need hands-on acceptance. The companion has fixture-based HTTP/browser validation.
+- Export is available through `--export ZIP`, grown-up controls and the paired phone.
+  Full app restore and hardware radio-off controls are not implemented. `--offline`
   blocks application job dispatch only. A crash between photo save and job enqueue can
   retain the original without a magic request; it never invents parent approval.
 - English only; no audio dependency. Do not claim Hebrew support or battery runtime.
@@ -99,17 +108,23 @@ formatting changes. Use the full upstream+new pytest suite for regression covera
 
 ## Next agent task
 
-Follow [TESTING.md](TESTING.md): hands-on camera/export acceptance is deferred by the user.
-Photo export is implemented and automatically tested. Next software packet is Copy Pip,
-with fake-clock game rules, integration, persistence and visual review.
-Hardware work needs the fact sheet before Picamera2/LCD/input verification.
-Pure game packets may use `Action`, `MemoryGame` as an example,
-`render.py` helpers and `Store` without hardware access. The lead owns changes to
-runtime.py, storage.py and shared contracts. Update this baseline after each milestone.
+The planned software packets are implemented. Follow [HANDOFF.md](HANDOFF.md) and
+[TESTING.md](TESTING.md) for acceptance, deferred by the user until implementation finishes.
+Hardware work is blocked on exact board/camera identification, verified module pinout
+and access to the physical device. Run the read-only hardware report there; do not
+guess GPIO mappings or install upstream hardware services on this different module.
 
-## Recorded verification (2026-09-22)
+## Recorded verification (2026-09-23)
 
-Python 3.11.15 on macOS: 153 tests passed (30 upstream, 123 Pocket Quest cases).
+Python 3.11.15 on macOS: 218 tests passed (30 upstream, 188 Pocket Quest cases).
+Two independent reviews identified queued-session revocation and restored-outing
+selection issues; both were fixed, regression-tested and confirmed by the reviewers.
+Game timing/retry/resume, all twelve mission evidence flows, parent settings, exclusions,
+storage reserve and authenticated localhost companion routes have regression coverage.
+The check suite binds temporary localhost ports for companion tests, not external networks.
+Headless Chrome at 390×844 passed pairing, demo approval, pause, outing selection,
+photo exclusion and ZIP download, with no page errors or horizontal overflow.
+Native 240×240 screens were visually reviewed; the pairing QR decoded in software.
 Export has 17 tests covering roundtrip/checksums, selected metadata, secret exclusion,
 orphan originals, symlinks, failures, destination races, and the real shell launcher.
 A real library export contained 7 photos / 12 image files; archive integrity,

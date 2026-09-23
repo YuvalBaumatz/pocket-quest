@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from imagegencam.config import load_env_file
-from imagegencam.quest.__main__ import parse_options
+from imagegencam.quest.__main__ import main, parse_options
 from imagegencam.quest.configuration import setup_gemini
 from imagegencam.quest.device import CameraUnavailable, FixtureCamera, WebcamCamera
 from imagegencam.quest.filters import Style
@@ -30,6 +30,21 @@ def test_normal_launch_uses_real_webcam_and_gemini() -> None:
     demo = parse_options(["--demo"])
     assert demo.camera == "fixture" and demo.provider == "demo"
     assert demo.data_dir != options.data_dir
+
+
+def test_missing_key_still_allows_local_app_and_games(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.setenv("SDL_VIDEODRIVER", "dummy")
+    monkeypatch.setattr(
+        "sys.argv", ["quest", "--camera", "fixture", "--frames", "1", "--data-dir", str(tmp_path)]
+    )
+    with patch("imagegencam.quest.__main__.load_credentials"):
+        main()
+    output = capsys.readouterr().out
+    assert "Starting with local filters and offline games" in output
+    assert "Provider: none" in output
 
 
 @pytest.mark.parametrize(

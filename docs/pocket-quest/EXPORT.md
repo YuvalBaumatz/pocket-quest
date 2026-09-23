@@ -1,5 +1,10 @@
 # Photo export and backup
 
+Export is also available from Home → Up → Export all photos, or the authenticated
+phone companion. It runs in the background and writes to `Pocket Quest Exports`
+beside the data directory (normally in your home folder). The phone can download
+the most recent completed export while the app remains running.
+
 From the Pocket Quest repository root:
 
 ```sh

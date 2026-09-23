@@ -63,6 +63,27 @@ for ambiguous requests and charges. OpenAI requires its own configured live test
 
 ## Next milestones
 
+Software implementation now includes Copy Pip, Photo Guess, all twelve missions,
+passport pages, outing choices, photo permissions, low-storage protection and the
+paired phone companion. The suite includes game clocks/retries/resume, mission evidence
+for every ID, duplicate stamps, preference persistence, exclusion from saved games,
+storage failure, pairing/CSRF/Host checks and UI-thread commands. Companion HTTP tests
+bind ephemeral localhost ports and need an environment that permits local sockets.
+
+The mobile browser flow was tested at 390×844 with fixture photos: pairing, demo
+generation approval, pause, outing changes, photo exclusion and ZIP download all passed.
+Native QR decoding passed in software. Actual phone/hotspot and LCD scans remain pending.
+
+Additional hands-on checks when testing begins:
+
+| Area | Check |
+| --- | --- |
+| Copy Pip | Complete five rounds; make a mistake; replay; leave/resume; hold a direction; switch window focus |
+| Photo Guess | Reveal all five levels; next image; restart mid-reveal; try an empty library |
+| Explore | Browse twelve cards; choose three outing missions; confirm evidence after restart; see both passport pages |
+| Parent controls | Exclude a photo and check both photo games; pause magic; build a ZIP while navigating |
+| Companion | Pair actual phone; inspect evidence; approve one intended job; export/download; revoke session with a new code |
+
 Milestone 2 photo export is implemented through `--export ZIP`; see [EXPORT.md](EXPORT.md).
 Its 17 automated cases cover archive integrity, image/source equality, secret exclusion,
 no overwrites, symlink rejection and failure cleanup. A real 7-photo / 12-image export
@@ -72,8 +93,8 @@ deferred at the user's request, along with the revised camera hands-on check.
 | Order | Deliverable | Required evidence before calling it done |
 | --- | --- | --- |
 | 2 | Export/backup originals and derivatives with manifest | Reopen archive; every reference resolves; no keys/config included; interrupted export preserves library |
-| 3 | Copy Pip, then Photo Guess | Fake-clock rules, no input during demonstration, recovery/resume, missing-photo fallback, actual child trial |
-| 4 | Twelve missions and passport | Every mission navigable; duplicate confirmation awards once; evidence survives restart; full pagination review |
+| 3 | Copy Pip and Photo Guess: implemented | Automated/visual checks passed; actual child trial pending |
+| 4 | Twelve missions and passport: implemented | Automated/visual checks passed; family outing trial pending |
 | 5 | Verified Pi display/input/camera adapters | Exact board/pinout documented; orientation/color bars; every button; capture/restart on real device |
 | 6 | Trip acceptance | Physical offline run, phone/export route, low-storage handling, measured battery life, child trial, 60-minute soak |
 
@@ -86,7 +107,7 @@ The automated suite uses real persistence and application logic with fake extern
 boundaries. Screenshots prove rendering, not usability. The Mac webcam has previously
 returned a real 1280×720 frame. The user has exercised camera/key setup and local
 filters, but this revised flow still needs a hands-on check. Pi/LCD/buttons/battery,
-OpenAI live generation, manual export acceptance, additional games and expanded missions are not yet
-accepted. Two user-approved Gemini requests succeeded on their first attempts and
+OpenAI live generation, manual export acceptance, the new games and expanded missions
+still need hands-on acceptance. Two user-approved Gemini requests succeeded on their first attempts and
 their originals/results decode successfully; the revised navigation still needs a
 hands-on pass. See BASELINE.md for the current implemented scope.

@@ -38,14 +38,19 @@ class InputMapper:
             return [Action.HOME if now - started >= 0.8 else Action.BACK]
         return []
 
-    def tick(self, now: float) -> list[Action]:
+    def tick(self, now: float, *, repeat_directions: bool = True) -> list[Action]:
         events: list[Action] = []
         for action, started in self.held.items():
             if action == Action.BACK:
                 if not self.back_consumed and now - started >= 0.8:
                     self.back_consumed = True
                     events.append(Action.HOME)
-            elif action in (Action.UP, Action.DOWN, Action.LEFT, Action.RIGHT):
+            elif repeat_directions and action in (
+                Action.UP,
+                Action.DOWN,
+                Action.LEFT,
+                Action.RIGHT,
+            ):
                 if now >= self.next_repeat[action]:
                     events.append(action)
                     self.next_repeat[action] = now + 0.15

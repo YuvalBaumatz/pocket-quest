@@ -7,7 +7,9 @@ import sys
 import time
 from pathlib import Path
 
+from .companion import ParentServer
 from .configuration import load_credentials, setup_gemini
+from .copy_pip import Phase
 from .device import Camera, FileCamera, FixtureCamera, PiCamera, WebcamCamera
 from .export import export_photos
 from .input import Action, InputMapper
@@ -21,6 +23,21 @@ def parse_options(argv: list[str] | None = None) -> argparse.Namespace:
         description="Pocket Quest: real camera and image transformations"
     )
     parser.add_argument("--data-dir", type=Path, default=None)
+    parser.add_argument(
+        "--storage-reserve-mib",
+        type=int,
+        default=200,
+        help="Free space to retain before new captures (minimum 16 MiB)",
+    )
+    parser.add_argument(
+        "--companion", action="store_true", help="Enable the paired parent web interface"
+    )
+    parser.add_argument(
+        "--companion-host",
+        default="127.0.0.1",
+        help="Local IPv4 to bind; specify the device LAN IP for phone access",
+    )
+    parser.add_argument("--companion-port", type=int, default=8765)
     parser.add_argument(
         "--export", type=Path, metavar="ZIP", help="Export photos to a new ZIP and exit"
     )
@@ -56,6 +73,12 @@ def parse_options(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--image", type=Path, help="Use your own image in the desktop camera")
     args = parser.parse_args(argv)
+    if args.storage_reserve_mib < 16:
+        parser.error("Keep at least 16 MiB of storage reserve")
+    if not 0 <= args.companion_port <= 65535:
+        parser.error("Invalid companion port")
+    if args.companion and (args.export or args.screenshots):
+        parser.error("Use the companion with the running app, not export/screenshots")
     if args.export and (args.setup_gemini or args.setup_gemini_clipboard or args.screenshots):
         parser.error("Use --export separately from key setup or screenshots")
     if args.frames is not None and args.frames < 1:
@@ -117,9 +140,10 @@ def main() -> None:
             raise SystemExit(str(error)) from None
     key_name = {"openai": "OPENAI_API_KEY", "gemini": "GEMINI_API_KEY"}.get(args.provider)
     if key_name and not os.environ.get(key_name, "").strip():
-        raise SystemExit(
-            f"{key_name} is not configured. Run with --setup-gemini for Gemini, or set the provider key locally. Use --provider none for camera-only testing. No demo fallback was used."
+        print(
+            f"{key_name} is not configured. Starting with local filters and offline games. Set up a key to enable AI styles."
         )
+        args.provider, args.model = "none", ""
     if args.camera == "webcam" and not args.image and importlib.util.find_spec("cv2") is None:
         raise SystemExit(
             "Install software/requirements-mac.txt in the project environment to use the webcam."
@@ -144,23 +168,56 @@ def main() -> None:
     model = args.model
     app = Quest(
         camera,
-        Store(args.data_dir),
+        Store(args.data_dir, reserve_bytes=args.storage_reserve_mib * 1024 * 1024),
         provider=args.provider,
         model=model,
         offline=args.offline,
         start_generation=not bool(args.screenshots),
     )
+    companion: ParentServer | None = None
     try:
+        if args.companion:
+            try:
+                companion = ParentServer(
+                    app.parent_bridge, app.store, args.companion_host, args.companion_port
+                )
+                app.publish_parent_state()
+                companion.start()
+                print(f"Parent companion: {app.parent_bridge.url}")
+                print("Open Home > Up > Pair phone for the one-use pairing code.")
+            except (OSError, ValueError) as error:
+                raise SystemExit(f"Could not start companion: {error}") from None
         for warning in app.store.warnings:
             print(f"Recovery: {warning}")
         if args.screenshots:
             args.screenshots.mkdir(parents=True, exist_ok=True)
-            for screen in (Screen.HOME, Screen.CAMERA, Screen.PLAY, Screen.EXPLORE):
+            for screen in (
+                Screen.HOME,
+                Screen.CAMERA,
+                Screen.PLAY,
+                Screen.EXPLORE,
+                Screen.PARENT,
+                Screen.OUTING,
+                Screen.ELIGIBILITY,
+                Screen.PAIR,
+            ):
                 app.screen = screen
                 render(app).save(args.screenshots / f"{screen.value}.png")
             app.screen = Screen.PLAY
             app.handle(Action.CONFIRM, 0)
             render(app).save(args.screenshots / "memory.png")
+            for index, name in ((1, "copy-pip"), (2, "photo-guess")):
+                app.screen, app.play_index = Screen.PLAY, index
+                app.handle(Action.CONFIRM, 0)
+                render(app).save(args.screenshots / f"{name}.png")
+            app.screen = Screen.EXPLORE
+            for index in range(12):
+                app.mission_index = index
+                render(app).save(args.screenshots / f"mission-{index + 1:02}.png")
+            app.screen = Screen.PASSPORT
+            for page in range(2):
+                app.passport_page = page
+                render(app).save(args.screenshots / f"passport-{page + 1}.png")
             return
         os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
         try:
@@ -194,12 +251,22 @@ def main() -> None:
                         quit_requested = True
                     elif event.type == pygame.WINDOWFOCUSLOST:
                         inputs.clear()
+                        app.games_paused = True
+                    elif event.type == pygame.WINDOWFOCUSGAINED:
+                        app.games_paused = False
+                        if (
+                            app.screen == Screen.COPY_PIP
+                            and app.copy_pip
+                            and app.copy_pip.phase != Phase.COMPLETE
+                        ):
+                            app.copy_pip.replay(now)
+                        dirty = True
                     elif event.type == pygame.WINDOWEXPOSED:
                         dirty = True
                     elif event.type in (pygame.KEYDOWN, pygame.KEYUP) and event.key in mapping:
                         handler = inputs.press if event.type == pygame.KEYDOWN else inputs.release
                         actions.extend(handler(mapping[event.key], now))
-                actions.extend(inputs.tick(now))
+                actions.extend(inputs.tick(now, repeat_directions=app.screen != Screen.COPY_PIP))
                 for action in actions:
                     app.handle(action, now)
                 dirty = app.tick(now) or bool(actions) or dirty
@@ -221,6 +288,8 @@ def main() -> None:
             finally:
                 pygame.quit()
     finally:
+        if companion:
+            companion.close()
         app.close()
 
 

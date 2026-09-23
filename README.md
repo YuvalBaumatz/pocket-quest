@@ -5,13 +5,15 @@ and little exploration missions. Personal fork of [OpenAI ImageGenCam](https://g
 
 **Working now:** a retro desktop interface, background photo capture, original/filtered
 album, local pixel and monochrome effects, three AI styles, a persistent approval queue,
-OpenAI/Gemini adapters, memory game, missions, and saved progress. The default Mac workflow
+OpenAI/Gemini adapters, three offline games, twelve missions, a stamp passport, parent
+controls, ZIP export, and an optional paired phone companion. The default Mac workflow
 is a live webcam plus Gemini. Real AI requires a locally configured key and approved jobs;
-a missing key or camera produces an explicit error, never a demo fallback.
+a missing key leaves local filters and offline games available. A missing camera is
+reported in Camera; games and Explore remain usable. Demo mode is always explicit.
 
 **Hardware still to verify:** the Pi camera adapter, your LCD/buttons, and battery.
-The phone companion is not yet connected to Pocket Quest. The original ImageGenCam
-application remains available.
+The exact Pi Zero variant, Pi camera model, display controller and pinout remain
+unverified. The original ImageGenCam application remains available.
 
 ![Pocket Quest camera workflow](docs/pocket-quest/camera-workflow-preview.png)
 
@@ -28,6 +30,9 @@ bash software/scripts/run_quest.sh --setup-gemini
 Use arrow keys, **Enter = A**, **Escape = B**, and **H = Home**. Holding Escape
 also returns Home. In Camera, left/right changes the style and down opens the album.
 In Explore, take a mission photo, then hand the device to a grown-up for confirmation.
+In Play, left/right chooses Memory, Copy Pip or Photo Guess. In Explore, Down opens
+the passport and Up reviews previously saved evidence. From Home, Up opens grown-up
+controls for online magic, outing choices, photo permissions, export and phone pairing.
 The default camera is your Mac webcam. Allow camera access for Terminal when macOS asks.
 The key setup prompt is hidden and writes only to the Git-ignored `software/.env`.
 Paste the key and press Enter; seeing no characters is normal. Empty or invalid input
@@ -63,6 +68,17 @@ bash software/scripts/run_quest.sh --export "$HOME/Downloads/pocket-quest-photos
 Creates a new ZIP with originals, local/AI results, and a checksum manifest, then exits.
 No key or camera is needed. Existing backups are never overwritten; use a new filename
 for each export. [Export details and limitations](docs/pocket-quest/EXPORT.md).
+
+## Optional parent companion
+
+```sh
+bash software/scripts/run_quest.sh --companion
+```
+
+Open the printed address on this Mac, then use the device's Home → Up → Pair phone
+screen for the one-use code. For phone access, bind explicitly to the device's local
+IPv4 with `--companion-host`; see [companion setup and boundaries](docs/pocket-quest/COMPANION.md).
+The companion is off unless requested. [Software handoff and physical checks](docs/pocket-quest/HANDOFF.md).
 
 ## Design and agent handoff
 
