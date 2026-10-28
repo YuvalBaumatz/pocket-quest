@@ -155,6 +155,47 @@ repository to be printed and shipped to you. You can also check your local
 library, or ask a friend with a printer to help. You can also skip the printed
 case entirely, but the electronics are quite fragile if left uncovered.
 
+## Troubleshooting
+
+Quick fixes for common bring-up problems. The full list, with more diagnostics,
+is in [docs/codex-guide/troubleshooting.md](docs/codex-guide/troubleshooting.md).
+
+### The camera app keeps restarting
+
+Stop the service so systemd quits restarting it, then check that the Pi can see
+the camera:
+
+```bash
+sudo systemctl stop imagegencam.service
+rpicam-hello --list-cameras
+```
+
+A Picamera2 `IndexError: list index out of range` in the logs usually means the
+camera stack sees no camera. Source: the "Camera App Crash Loop" section of the
+troubleshooting guide.
+
+### The web app does not open
+
+Check the service with `sudo systemctl status imagegencam.service --no-pager`
+and the Pi's address with `hostname -I`. The installed service listens on port
+80 (`http://imagegencam.local`); manual runs listen on port 8000. The web app is
+local-LAN only, so your phone must be on the same Wi-Fi as the camera. Source:
+the "Web App Does Not Open" section of the troubleshooting guide.
+
+### Switching Wi-Fi failed
+
+Don't delete saved connections while debugging. If the display says activation
+failed and NetworkManager logs `Not authorized to control networking`, reinstall
+the service files:
+
+```bash
+cd ~/Documents/imagegencam/software
+./scripts/install_service.sh
+sudo systemctl restart imagegencam.service
+```
+
+Source: the "Wi-Fi Change Failed" section of the troubleshooting guide.
+
 ## License
 
 This project is licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
